@@ -10,13 +10,11 @@
     <style>
         body { font-family: 'Hiragino Maru Gothic ProN', 'Rounded M+ 1c', sans-serif; background-color: #fdf6e3; color: #5c4b51; margin: 0; padding: 0; overflow: hidden; }
         
-        /* マップ画面用 */
         #map-screen { position: absolute; top: 0; bottom: 0; left: 0; right: 0; }
         #map { height: 100%; width: 100%; z-index: 0; }
         .ui-layer { position: absolute; z-index: 1000; pointer-events: none; }
         .interactive { pointer-events: auto; }
         
-        /* 庭画面用 */
         #garden-screen { 
             display: none; position: absolute; inset: 0; z-index: 1500; 
             background-image: url('./garden.png'); 
@@ -30,13 +28,13 @@
             filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
         }
 
-        .custom-popup .leaflet-popup-content-wrapper { background-color: #ffe8d6; color: #5c4b51; border-radius: 12px; font-weight: bold; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        .custom-popup .leaflet-popup-tip { background-color: #ffe8d6; }
+        .custom-popup .leaflet-popup-content-wrapper { background-color: #ffe8d6; color: #333; border-radius: 12px; font-weight: bold; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); border: 2px solid #fb923c; }
+        .custom-popup .leaflet-popup-tip { background-color: #fb923c; }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
         .bounce-active { animation: bounce 0.5s ease 2; }
         .face-left { transform: scaleX(-1); }
         .face-right { transform: scaleX(1); }
-        .cat-wrapper { transition: transform 0.3s ease, opacity 0.5s ease, width 0.3s ease, height 0.3s ease; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3)); }
+        .cat-wrapper { transition: transform 0.3s ease, opacity 0.5s ease, width 0.3s ease, height 0.3s ease; filter: drop-shadow(0 6px 6px rgba(0,0,0,0.5)); }
         .fade-out { opacity: 0; }
         #zukan-modal { display: none; }
         #zukan-modal.show { display: flex; }
@@ -44,76 +42,72 @@
 </head>
 <body class="h-screen w-screen relative">
 
-    <!-- スタート画面 -->
     <div id="start-screen" class="absolute inset-0 bg-[#fdf6e3] flex flex-col items-center justify-center z-[4000] transition-opacity duration-500">
-        <h1 class="text-4xl font-black text-orange-600 mb-8 text-center leading-tight">とびしま<br>ねこあつめ</h1>
-        <button id="start-btn" class="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-full font-bold text-xl shadow-xl transition-transform hover:scale-105 border-4 border-white interactive">
-            ぼうけんをはじめる
+        <h1 class="text-5xl font-black text-orange-600 mb-8 text-center leading-tight">とびしま<br>ねこあつめ</h1>
+        <button id="start-btn" class="bg-orange-500 hover:bg-orange-600 text-white px-10 py-6 rounded-full font-bold text-2xl shadow-xl transition-transform hover:scale-105 border-4 border-white interactive">
+            はじめる
         </button>
-        <p class="text-xs text-gray-500 mt-6 font-bold">※ねこが現れると音が鳴ります</p>
+        <p class="text-base text-gray-600 mt-6 font-bold">※音が鳴ります</p>
     </div>
 
-    <!-- マップ画面 -->
     <div id="map-screen">
         <div id="map"></div>
         <div id="loading" class="absolute inset-0 bg-[#fdf6e3]/90 flex items-center justify-center z-[2000] hidden">
             <div class="text-center">
-                <p class="text-xl font-bold animate-pulse text-orange-600">GPSを探していますニャ...</p>
+                <p class="text-2xl font-bold animate-pulse text-orange-600">GPSを探しています...</p>
             </div>
         </div>
 
         <div class="ui-layer top-0 left-0 w-full p-4 pt-8 flex justify-center">
-            <div class="bg-white/90 backdrop-blur-md px-6 py-2 rounded-full shadow-md text-center interactive border border-gray-100">
-                <h1 class="text-lg font-bold text-orange-600 leading-tight">とびしま ねこあつめ</h1>
-                <p id="island-name" class="text-[10px] text-gray-500 font-bold mt-0.5">現在地を確認中...</p>
+            <div class="bg-white/95 backdrop-blur-md px-6 py-3 rounded-full shadow-md text-center interactive border-2 border-orange-200">
+                <h1 class="text-xl font-bold text-orange-600 leading-tight">とびしま ねこあつめ</h1>
+                <p id="island-name" class="text-sm text-gray-700 font-bold mt-1">現在地を確認中...</p>
             </div>
         </div>
 
-        <!-- 下部UI（重なり解消版） -->
-        <div class="ui-layer bottom-0 left-0 w-full p-4 pb-6 flex justify-between items-end gap-2">
-            <button id="go-garden-btn" class="bg-green-500 hover:bg-green-600 text-white w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-xl shadow-lg transition-transform hover:scale-105 interactive border-2 border-white">
+        <!-- 【大修正】下部UIを上に持ち上げ、ボタンと文字を大きくしました -->
+        <!-- pb-12 を追加して、スマホのホームボタンとの干渉を回避 -->
+        <div class="ui-layer bottom-0 left-0 w-full p-4 pb-12 flex justify-between items-end gap-2">
+            <button id="go-garden-btn" class="bg-green-500 hover:bg-green-600 text-white w-16 h-16 shrink-0 rounded-full flex items-center justify-center text-3xl shadow-lg transition-transform hover:scale-105 interactive border-4 border-white">
                 🏡
             </button>
             
-            <div class="bg-white/90 backdrop-blur-md px-3 py-2 rounded-full shadow-lg flex flex-1 items-center justify-center gap-2 interactive border border-gray-100 max-w-[200px]">
-                <div class="w-8 h-8 shrink-0 bg-orange-100 rounded-full flex items-center justify-center text-lg shadow-inner">🐟</div>
+            <div class="bg-white/95 backdrop-blur-md px-4 py-3 rounded-full shadow-lg flex flex-1 items-center justify-center gap-3 interactive border-2 border-orange-200 max-w-[220px]">
+                <div class="w-12 h-12 shrink-0 bg-orange-100 rounded-full flex items-center justify-center text-2xl shadow-inner">🐟</div>
                 <div class="text-center">
-                    <p class="text-[9px] text-gray-400 font-bold leading-none mb-1">もっているエサ</p>
-                    <p id="food-count" class="font-black text-base leading-none">3 <span class="text-xs font-normal text-gray-500">個</span></p>
+                    <p class="text-xs text-gray-600 font-bold leading-none mb-1">もっているエサ</p>
+                    <p id="food-count" class="font-black text-2xl leading-none text-gray-800">3 <span class="text-sm font-normal text-gray-600">個</span></p>
                 </div>
             </div>
 
-            <button id="open-zukan" class="bg-indigo-500 hover:bg-indigo-600 text-white w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-xl shadow-lg transition-transform hover:scale-105 interactive border-2 border-white">
+            <button id="open-zukan" class="bg-indigo-500 hover:bg-indigo-600 text-white w-16 h-16 shrink-0 rounded-full flex items-center justify-center text-3xl shadow-lg transition-transform hover:scale-105 interactive border-4 border-white">
                 📖
             </button>
         </div>
     </div>
 
-    <!-- 庭画面 -->
     <div id="garden-screen">
         <div class="absolute top-8 left-4 z-10">
-            <button id="back-map-btn" class="bg-white/90 backdrop-blur-md text-gray-700 px-4 py-2 rounded-full font-bold shadow-md border border-gray-100 hover:bg-gray-50 interactive">
+            <button id="back-map-btn" class="bg-white/95 backdrop-blur-md text-gray-800 px-6 py-3 rounded-full font-bold text-lg shadow-md border-2 border-gray-200 hover:bg-gray-50 interactive">
                 ◀ マップにもどる
             </button>
         </div>
         <div id="garden-container" class="w-full h-full relative"></div>
     </div>
 
-    <!-- 図鑑モーダル -->
     <div id="zukan-modal" class="fixed inset-0 bg-black/60 z-[3000] items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl relative interactive">
-            <h2 class="text-xl font-black text-center text-indigo-800 mb-4">ねこ図鑑</h2>
-            <div id="cat-detail" class="bg-white rounded-2xl p-4 mb-4 min-h-[90px] flex items-center justify-center text-center shadow-inner border border-gray-100">
-                <p class="text-gray-400 text-sm font-bold">ねこをタップすると<br>くわしい情報がみれるニャ</p>
+        <div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl relative interactive border-4 border-indigo-200">
+            <h2 class="text-2xl font-black text-center text-indigo-800 mb-4">ねこ図鑑</h2>
+            <div id="cat-detail" class="bg-white rounded-2xl p-4 mb-4 min-h-[100px] flex items-center justify-center text-center shadow-inner border border-gray-200">
+                <p class="text-gray-500 text-base font-bold">ねこをタップすると<br>くわしい情報がみれるニャ</p>
             </div>
             <div class="grid grid-cols-3 gap-3 max-h-[40vh] overflow-y-auto p-1" id="zukan-list"></div>
             <div class="mt-6 text-center">
-                <button id="close-zukan" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-8 py-3 rounded-full font-bold transition-colors shadow-sm">とじる</button>
+                <button id="close-zukan" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-10 py-4 rounded-full font-bold text-lg transition-colors shadow-sm">とじる</button>
             </div>
         </div>
     </div>
 
-    <!-- 別ファイルの猫データを読み込む -->
     <script src="./cats.js"></script>
 
     <script>
@@ -121,7 +115,6 @@
         const DUMMY_LAT = 34.1795;
         const DUMMY_LNG = 132.8365;
 
-        // 千葉テストエリアを追加済み
         const ISLANDS = {
             "osaki_shimojima": { name: "大崎下島", bounds: { minLat: 34.160, maxLat: 34.200, minLng: 132.800, maxLng: 132.870 } },
             "chiba_test": { name: "千葉テストエリア", bounds: { minLat: 35.0, maxLat: 36.0, minLng: 139.0, maxLng: 141.0 } }
@@ -137,7 +130,8 @@
         const map = L.map('map', { zoomControl: false }).setView([35.681236, 139.767125], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
 
-        const BASE_ICON_SIZE = 50;
+        // 【大修正】猫の基本サイズを大幅アップ（50 → 80）
+        const BASE_ICON_SIZE = 80;
         let playerMarker = null;
         let activeCatMarker = null; 
         let activeCatIconOptions = null; 
@@ -145,12 +139,12 @@
         let catTargetLatLng = null;
         let moveInterval = null;
 
-        // 【修正版】猫の最小サイズを35pxに引き上げ
         map.on('zoomend', function() {
             if(activeCatMarker && activeCatIconOptions) {
                 const zoom = map.getZoom();
                 let scale = Math.pow(1.5, zoom - 17);
-                const newSize = Math.max(35, Math.min(BASE_ICON_SIZE * scale, 150));
+                // 【大修正】どんなに縮小しても「60px」、拡大時は最大「200px」になるように計算
+                const newSize = Math.max(60, Math.min(BASE_ICON_SIZE * scale, 200));
                 
                 const catImg = document.getElementById('cat-image');
                 if(catImg) { catImg.style.width = `${newSize}px`; catImg.style.height = `${newSize}px`; }
@@ -213,9 +207,9 @@
             activeCatMarker.on('click', () => {
                 if(foodCount > 0) {
                     foodCount--;
-                    document.getElementById('food-count').innerHTML = `${foodCount} <span class="text-sm font-normal text-gray-500">個</span>`;
+                    document.getElementById('food-count').innerHTML = `${foodCount} <span class="text-sm font-normal text-gray-600">個</span>`;
                     addToZukan(selectedCat.id);
-                    activeCatMarker.bindPopup(`<b>「おいしいニャ！ありがとう！」<br><span class="text-[10px] text-orange-500 block mt-1">お庭に遊びにくるようになったニャ！</span></b>`, { className: 'custom-popup' }).openPopup();
+                    activeCatMarker.bindPopup(`<b style="font-size: 16px;">「おいしいニャ！ありがとう！」<br><span style="color: #ea580c; font-size: 12px; display: block; margin-top: 4px;">お庭に遊びにくるようになったニャ！</span></b>`, { className: 'custom-popup' }).openPopup();
                     
                     setTimeout(() => {
                         const catImg = document.getElementById('cat-image');
@@ -223,7 +217,7 @@
                         setTimeout(() => { map.removeLayer(activeCatMarker); clearInterval(moveInterval); isCatSpawned = false; }, 500);
                     }, 3000);
                 } else {
-                    activeCatMarker.bindPopup('<b>「エサがないニャ...」</b>', { className: 'custom-popup' }).openPopup();
+                    activeCatMarker.bindPopup('<b style="font-size: 16px;">「エサがないニャ...」</b>', { className: 'custom-popup' }).openPopup();
                 }
             });
 
@@ -249,7 +243,6 @@
             map.fire('zoomend');
         }
 
-        // 【修正版】どこでもISLANDSに登録されていればOK
         function updateLocation(lat, lng) {
             const playerLatLng = L.latLng(lat, lng);
             document.getElementById('loading').style.display = 'none';
@@ -293,7 +286,7 @@
             }
         });
 
-        // 庭モードのUI制御（気まぐれAI版）
+        // 庭モードのUI制御
         const mapScreen = document.getElementById('map-screen');
         const gardenScreen = document.getElementById('garden-screen');
         const goGardenBtn = document.getElementById('go-garden-btn');
@@ -315,7 +308,8 @@
                     const cat = CAT_DATA[catId];
                     const catElement = document.createElement('img');
                     catElement.src = cat.image;
-                    catElement.className = 'garden-cat w-16 h-16 object-contain';
+                    // 【修正】庭の猫も大きく（w-16 h-16 → w-24 h-24）
+                    catElement.className = 'garden-cat w-24 h-24 object-contain';
                     
                     let currentTop = Math.random() * 70 + 15;
                     let currentLeft = Math.random() * 70 + 15;
@@ -378,7 +372,7 @@
 
         openZukanBtn.addEventListener('click', () => {
             zukanList.innerHTML = '';
-            catDetail.innerHTML = '<p class="text-gray-400 text-sm font-bold">ねこをタップすると<br>くわしい情報がみれるニャ</p>';
+            catDetail.innerHTML = '<p class="text-gray-500 text-base font-bold">ねこをタップすると<br>くわしい情報がみれるニャ</p>';
             
             for (const catId in CAT_DATA) {
                 const cat = CAT_DATA[catId];
@@ -389,15 +383,15 @@
                 const catElement = document.createElement('div');
                 catElement.className = "flex flex-col items-center p-2 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-orange-50 transition-colors";
                 catElement.innerHTML = `
-                    <img src="${cat.image}" class="w-14 h-14 object-contain mb-1" style="${filterStyle}">
-                    <p class="text-[10px] font-bold text-gray-700">${catName}</p>
+                    <img src="${cat.image}" class="w-16 h-16 object-contain mb-2" style="${filterStyle}">
+                    <p class="text-xs font-bold text-gray-800">${catName}</p>
                 `;
                 
                 catElement.addEventListener('click', () => {
                     if (isDiscovered) {
-                        catDetail.innerHTML = `<div class="flex items-center gap-4 w-full"><div class="w-16 h-16 shrink-0 bg-orange-100 rounded-full flex items-center justify-center border-2 border-orange-200"><img src="${cat.image}" class="w-12 h-12 object-contain"></div><div class="text-left"><p class="font-black text-indigo-800 text-lg leading-none">${cat.name}</p><p class="text-xs text-gray-600 mt-2 font-medium">${cat.description}</p></div></div>`;
+                        catDetail.innerHTML = `<div class="flex items-center gap-4 w-full"><div class="w-20 h-20 shrink-0 bg-orange-100 rounded-full flex items-center justify-center border-4 border-orange-200"><img src="${cat.image}" class="w-16 h-16 object-contain"></div><div class="text-left"><p class="font-black text-indigo-800 text-xl leading-none">${cat.name}</p><p class="text-sm text-gray-700 mt-2 font-medium">${cat.description}</p></div></div>`;
                     } else {
-                        catDetail.innerHTML = `<div class="flex items-center gap-4 w-full"><div class="w-16 h-16 shrink-0 bg-gray-200 rounded-full flex items-center justify-center text-2xl text-gray-400 font-black border-2 border-gray-300">？</div><div class="text-left"><p class="font-black text-gray-500 text-lg leading-none">？？？</p><p class="text-xs text-gray-400 mt-2 font-medium">まだであっていないニャ<br>島をぼうけんしてさがそう！</p></div></div>`;
+                        catDetail.innerHTML = `<div class="flex items-center gap-4 w-full"><div class="w-20 h-20 shrink-0 bg-gray-200 rounded-full flex items-center justify-center text-3xl text-gray-400 font-black border-4 border-gray-300">？</div><div class="text-left"><p class="font-black text-gray-500 text-xl leading-none">？？？</p><p class="text-sm text-gray-500 mt-2 font-medium">まだであっていないニャ<br>島をぼうけんしてさがそう！</p></div></div>`;
                     }
                 });
 
