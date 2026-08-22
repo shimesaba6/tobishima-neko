@@ -16,7 +16,7 @@
         .ui-layer { position: absolute; z-index: 1000; pointer-events: none; }
         .interactive { pointer-events: auto; }
         
-        /* 庭画面用（最初は非表示） */
+        /* 庭画面用 */
         #garden-screen { 
             display: none; position: absolute; inset: 0; z-index: 1500; 
             background-image: url('./garden.png'); 
@@ -24,7 +24,6 @@
             overflow: hidden;
         }
         
-        /* 庭を歩く猫のスタイル */
         .garden-cat {
             position: absolute;
             transition: top 3s ease-in-out, left 3s ease-in-out, transform 0.5s;
@@ -54,9 +53,7 @@
         <p class="text-xs text-gray-500 mt-6 font-bold">※ねこが現れると音が鳴ります</p>
     </div>
 
-    <!-- ========================================== -->
-    <!-- マップ画面エリア -->
-    <!-- ========================================== -->
+    <!-- マップ画面 -->
     <div id="map-screen">
         <div id="map"></div>
         <div id="loading" class="absolute inset-0 bg-[#fdf6e3]/90 flex items-center justify-center z-[2000] hidden">
@@ -72,42 +69,37 @@
             </div>
         </div>
 
-        <div class="ui-layer bottom-0 left-0 w-full p-4 pb-8 flex justify-between items-end">
-            <!-- 庭へ行くボタン -->
-            <button id="go-garden-btn" class="bg-green-500 hover:bg-green-600 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg transition-transform hover:scale-105 interactive border-2 border-white mb-2">
+        <!-- 下部UI（重なり解消版） -->
+        <div class="ui-layer bottom-0 left-0 w-full p-4 pb-6 flex justify-between items-end gap-2">
+            <button id="go-garden-btn" class="bg-green-500 hover:bg-green-600 text-white w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-xl shadow-lg transition-transform hover:scale-105 interactive border-2 border-white">
                 🏡
             </button>
             
-            <div class="bg-white/90 backdrop-blur-md pl-2 pr-5 py-2 rounded-full shadow-lg flex items-center gap-3 interactive border border-gray-100 mx-2">
-                <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-xl shadow-inner">🐟</div>
-                <div>
-                    <p class="text-[9px] text-gray-400 font-bold mb-0.5">もっているエサ</p>
-                    <p id="food-count" class="font-black text-lg leading-none">3 <span class="text-sm font-normal text-gray-500">個</span></p>
+            <div class="bg-white/90 backdrop-blur-md px-3 py-2 rounded-full shadow-lg flex flex-1 items-center justify-center gap-2 interactive border border-gray-100 max-w-[200px]">
+                <div class="w-8 h-8 shrink-0 bg-orange-100 rounded-full flex items-center justify-center text-lg shadow-inner">🐟</div>
+                <div class="text-center">
+                    <p class="text-[9px] text-gray-400 font-bold leading-none mb-1">もっているエサ</p>
+                    <p id="food-count" class="font-black text-base leading-none">3 <span class="text-xs font-normal text-gray-500">個</span></p>
                 </div>
             </div>
 
-            <button id="open-zukan" class="bg-indigo-500 hover:bg-indigo-600 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg transition-transform hover:scale-105 interactive border-2 border-white mb-2">
+            <button id="open-zukan" class="bg-indigo-500 hover:bg-indigo-600 text-white w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-xl shadow-lg transition-transform hover:scale-105 interactive border-2 border-white">
                 📖
             </button>
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- 庭画面エリア -->
-    <!-- ========================================== -->
+    <!-- 庭画面 -->
     <div id="garden-screen">
         <div class="absolute top-8 left-4 z-10">
             <button id="back-map-btn" class="bg-white/90 backdrop-blur-md text-gray-700 px-4 py-2 rounded-full font-bold shadow-md border border-gray-100 hover:bg-gray-50 interactive">
                 ◀ マップにもどる
             </button>
         </div>
-        
         <div id="garden-container" class="w-full h-full relative"></div>
     </div>
 
-    <!-- ========================================== -->
     <!-- 図鑑モーダル -->
-    <!-- ========================================== -->
     <div id="zukan-modal" class="fixed inset-0 bg-black/60 z-[3000] items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl relative interactive">
             <h2 class="text-xl font-black text-center text-indigo-800 mb-4">ねこ図鑑</h2>
@@ -129,6 +121,7 @@
         const DUMMY_LAT = 34.1795;
         const DUMMY_LNG = 132.8365;
 
+        // 千葉テストエリアを追加済み
         const ISLANDS = {
             "osaki_shimojima": { name: "大崎下島", bounds: { minLat: 34.160, maxLat: 34.200, minLng: 132.800, maxLng: 132.870 } },
             "chiba_test": { name: "千葉テストエリア", bounds: { minLat: 35.0, maxLat: 36.0, minLng: 139.0, maxLng: 141.0 } }
@@ -152,11 +145,13 @@
         let catTargetLatLng = null;
         let moveInterval = null;
 
+        // 【修正版】猫の最小サイズを35pxに引き上げ
         map.on('zoomend', function() {
             if(activeCatMarker && activeCatIconOptions) {
                 const zoom = map.getZoom();
                 let scale = Math.pow(1.5, zoom - 17);
-                const newSize = Math.max(30, Math.min(BASE_ICON_SIZE * scale, 150));
+                const newSize = Math.max(35, Math.min(BASE_ICON_SIZE * scale, 150));
+                
                 const catImg = document.getElementById('cat-image');
                 if(catImg) { catImg.style.width = `${newSize}px`; catImg.style.height = `${newSize}px`; }
                 
@@ -254,6 +249,7 @@
             map.fire('zoomend');
         }
 
+        // 【修正版】どこでもISLANDSに登録されていればOK
         function updateLocation(lat, lng) {
             const playerLatLng = L.latLng(lat, lng);
             document.getElementById('loading').style.display = 'none';
@@ -264,7 +260,6 @@
 
             currentIslandKey = checkIsland(lat, lng);
             
-            // 【修正】「大崎下島」固定ではなく、ISLANDSに登録されている場所ならOKにする
             if (currentIslandKey) { 
                 document.getElementById('island-name').innerText = `〜 ${ISLANDS[currentIslandKey].name} 〜`;
                 if (!window.spawnTimer) window.spawnTimer = setInterval(() => { if (!isCatSpawned && Math.random() < 0.2) spawnCat(playerMarker.getLatLng()); }, 10000); 
@@ -298,18 +293,15 @@
             }
         });
 
-        // ==========================================
         // 庭モードのUI制御（気まぐれAI版）
-        // ==========================================
         const mapScreen = document.getElementById('map-screen');
         const gardenScreen = document.getElementById('garden-screen');
         const goGardenBtn = document.getElementById('go-garden-btn');
         const backMapBtn = document.getElementById('back-map-btn');
         const gardenContainer = document.getElementById('garden-container');
         
-        let gardenIntervals = []; // 庭の猫たちのタイマー配列
+        let gardenIntervals = []; 
 
-        // 庭へ行くボタンを押した時
         goGardenBtn.addEventListener('click', () => {
             mapScreen.style.display = 'none';
             gardenScreen.style.display = 'block';
@@ -332,15 +324,10 @@
                     
                     gardenContainer.appendChild(catElement);
 
-                    // それぞれの猫が独立して動く再帰関数（気まぐれAI）
                     function actCat() {
-                        // 次の行動を起こすまでの待機時間をランダムに決定（2秒〜8秒）
                         const nextActionTime = Math.random() * 6000 + 2000;
-                        
                         const timer = setTimeout(() => {
-                            // 行動の抽選（70%の確率でサボる、30%で移動する）
                             const isMoving = Math.random() < 0.3;
-                            
                             if (isMoving) {
                                 const targetTop = Math.random() * 70 + 15;
                                 const targetLeft = Math.random() * 70 + 15;
@@ -356,7 +343,6 @@
                                 catElement.style.top = `${targetTop}%`;
                                 catElement.style.left = `${targetLeft}%`;
                                 
-                                // 移動する時のごくまれな確率でジャンプ
                                 if (Math.random() < 0.2) {
                                     catElement.classList.add('bounce-active');
                                     setTimeout(() => catElement.classList.remove('bounce-active'), 1000);
@@ -365,35 +351,25 @@
                                 currentTop = targetTop;
                                 currentLeft = targetLeft;
                             }
-                            // 行動（またはサボり）が終わったら、次の行動を予約する
                             actCat();
                         }, nextActionTime);
-                        
                         gardenIntervals.push(timer);
                     }
-                    
-                    // 庭に入った直後に、各猫のAIをスタートさせる
                     actCat();
                 }
             });
         });
 
-        // マップに戻るボタンを押した時
         backMapBtn.addEventListener('click', () => {
             gardenScreen.style.display = 'none';
             mapScreen.style.display = 'block';
-            
-            // clearTimeoutで猫の動きを完全に止める
             gardenIntervals.forEach(clearTimeout);
             gardenIntervals = [];
             gardenContainer.innerHTML = '';
-            
             map.invalidateSize();
         });
 
-        // ==========================================
         // 図鑑のUI制御
-        // ==========================================
         const zukanModal = document.getElementById('zukan-modal');
         const openZukanBtn = document.getElementById('open-zukan');
         const closeZukanBtn = document.getElementById('close-zukan');
