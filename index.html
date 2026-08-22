@@ -40,7 +40,8 @@
         #zukan-modal.show { display: flex; }
     </style>
 </head>
-<body class="h-screen w-screen relative">
+<!-- 【修正】スマホのOSボタンを回避する 100dvh を適用 -->
+<body class="w-screen relative" style="height: 100dvh;">
 
     <div id="start-screen" class="absolute inset-0 bg-[#fdf6e3] flex flex-col items-center justify-center z-[4000] transition-opacity duration-500">
         <h1 class="text-5xl font-black text-orange-600 mb-8 text-center leading-tight">とびしま<br>ねこあつめ</h1>
@@ -58,16 +59,15 @@
             </div>
         </div>
 
-        <div class="ui-layer top-0 left-0 w-full p-4 pt-8 flex justify-center">
-            <div class="bg-white/95 backdrop-blur-md px-6 py-3 rounded-full shadow-md text-center interactive border-2 border-orange-200">
-                <h1 class="text-xl font-bold text-orange-600 leading-tight">とびしま ねこあつめ</h1>
-                <p id="island-name" class="text-sm text-gray-700 font-bold mt-1">現在地を確認中...</p>
+        <!-- 【大修正】タイトルを削除し、現在地だけのシンプルな表示に変更 -->
+        <div class="ui-layer top-0 left-0 w-full p-4 pt-6 flex justify-center">
+            <div class="bg-white/95 backdrop-blur-md px-8 py-3 rounded-full shadow-md text-center interactive border-2 border-orange-200">
+                <p id="island-name" class="text-base text-orange-700 font-black">現在地を確認中...</p>
             </div>
         </div>
 
-        <!-- 【大修正】下部UIを上に持ち上げ、ボタンと文字を大きくしました -->
-        <!-- pb-12 を追加して、スマホのホームボタンとの干渉を回避 -->
-        <div class="ui-layer bottom-0 left-0 w-full p-4 pb-12 flex justify-between items-end gap-2">
+        <!-- 【修正】dvhのおかげで重ならないので、少し下部余白をスッキリさせました -->
+        <div class="ui-layer bottom-0 left-0 w-full p-4 pb-8 flex justify-between items-end gap-2">
             <button id="go-garden-btn" class="bg-green-500 hover:bg-green-600 text-white w-16 h-16 shrink-0 rounded-full flex items-center justify-center text-3xl shadow-lg transition-transform hover:scale-105 interactive border-4 border-white">
                 🏡
             </button>
@@ -130,7 +130,6 @@
         const map = L.map('map', { zoomControl: false }).setView([35.681236, 139.767125], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
 
-        // 【大修正】猫の基本サイズを大幅アップ（50 → 80）
         const BASE_ICON_SIZE = 80;
         let playerMarker = null;
         let activeCatMarker = null; 
@@ -143,7 +142,6 @@
             if(activeCatMarker && activeCatIconOptions) {
                 const zoom = map.getZoom();
                 let scale = Math.pow(1.5, zoom - 17);
-                // 【大修正】どんなに縮小しても「60px」、拡大時は最大「200px」になるように計算
                 const newSize = Math.max(60, Math.min(BASE_ICON_SIZE * scale, 200));
                 
                 const catImg = document.getElementById('cat-image');
@@ -254,6 +252,7 @@
             currentIslandKey = checkIsland(lat, lng);
             
             if (currentIslandKey) { 
+                // 【修正】文字をシンプルに
                 document.getElementById('island-name').innerText = `〜 ${ISLANDS[currentIslandKey].name} 〜`;
                 if (!window.spawnTimer) window.spawnTimer = setInterval(() => { if (!isCatSpawned && Math.random() < 0.2) spawnCat(playerMarker.getLatLng()); }, 10000); 
             } else {
@@ -308,7 +307,6 @@
                     const cat = CAT_DATA[catId];
                     const catElement = document.createElement('img');
                     catElement.src = cat.image;
-                    // 【修正】庭の猫も大きく（w-16 h-16 → w-24 h-24）
                     catElement.className = 'garden-cat w-24 h-24 object-contain';
                     
                     let currentTop = Math.random() * 70 + 15;
