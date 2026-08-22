@@ -64,12 +64,18 @@
             </div>
         </div>
 
+        <!-- 【新規追加】現在地に戻るボタン（最初は透明で隠れています） -->
+        <div id="recenter-container" class="ui-layer bottom-32 left-0 w-full flex justify-center transition-all duration-300 opacity-0 pointer-events-none translate-y-4">
+            <button id="recenter-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-full font-bold text-base shadow-lg border-2 border-white interactive flex items-center gap-2">
+                📍 現在地に戻る
+            </button>
+        </div>
+
         <div class="ui-layer bottom-0 left-0 w-full p-4 pb-8 flex justify-between items-end gap-2">
             <button id="go-garden-btn" class="bg-green-500 hover:bg-green-600 text-white w-16 h-16 shrink-0 rounded-full flex items-center justify-center text-3xl shadow-lg transition-transform hover:scale-105 interactive border-4 border-white">
                 🏡
             </button>
             
-            <!-- 【大修正】エサのUIにプログレスバー（ゲージ）を追加しました -->
             <div class="bg-white/95 backdrop-blur-md px-3 py-2 rounded-3xl shadow-lg flex flex-1 flex-col items-center justify-center interactive border-2 border-orange-200 max-w-[200px]">
                 <div class="flex items-center justify-center gap-2 mb-1 w-full">
                     <div class="w-10 h-10 shrink-0 bg-orange-100 rounded-full flex items-center justify-center text-xl shadow-inner">🐟</div>
@@ -129,11 +135,13 @@
         let foodCount = 3;
         let zukanData = JSON.parse(localStorage.getItem('tobishima_zukan')) || [];
 
-        // 【新規追加】移動距離を計算するための変数
         let lastLatLng = null;
         let distanceWalked = 0;
-        const DISTANCE_TO_FOOD = 50; // 50m歩くごとにエサ1個
+        const DISTANCE_TO_FOOD = 50; 
         let gpsWatchId = null;
+        
+        // 【新規追加】自動追従モードかどうかのフラグ
+        let isTracking = true;
 
         const catVoice = new Audio('./catvoice.mp3');
 
@@ -147,6 +155,31 @@
         let catCurrentLatLng = null;
         let catTargetLatLng = null;
         let moveInterval = null;
+
+        // 【新規追加】マップを指でドラッグ（スワイプ）した時の処理
+        const recenterContainer = document.getElementById('recenter-container');
+        const recenterBtn = document.getElementById('recenter-btn');
+
+        map.on('dragstart', () => {
+            if (isTracking) {
+                isTracking = false; // 自動追従を解除
+                // 現在地に戻るボタンをフワッと表示
+                recenterContainer.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+                recenterContainer.classList.add('opacity-100', 'pointer-events-auto', 'translate-y-0');
+            }
+        });
+
+        // 【新規追加】「現在地に戻る」ボタンを押した時の処理
+        recenterBtn.addEventListener('click', () => {
+            isTracking = true; // 自動追従を再開
+            // ボタンを隠す
+            recenterContainer.classList.remove('opacity-100', 'pointer-events-auto', 'translate-y-0');
+            recenterContainer.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+            
+            if (playerMarker) {
+                map.setView(playerMarker.getLatLng(), map.getZoom()); // 現在地へカメラを戻す
+            }
+        });
 
         map.on('zoomend', function() {
             if(activeCatMarker && activeCatIconOptions) {
@@ -173,7 +206,6 @@
             return null;
         }
 
-        // 【新規追加】2点間の距離（メートル）を計算する関数
         function getDistance(lat1, lon1, lat2, lon2) {
             const R = 6371e3;
             const p1 = lat1 * Math.PI/180;
@@ -185,10 +217,9 @@
             return R * c;
         }
 
-        // 【修正】猫の出現位置を「少し離れた場所」にする関数
         function getSpawnLocation(latlng) {
             const angle = Math.random() * Math.PI * 2;
-            const radius = 0.0006 + (Math.random() * 0.0006); // 近すぎず遠すぎないドーナツ状の範囲
+            const radius = 0.0006 + (Math.random() * 0.0006);
             return L.latLng(latlng.lat + radius * Math.sin(angle), latlng.lng + radius * Math.cos(angle));
         }
 
@@ -228,7 +259,6 @@
             activeCatIconOptions = { html: `<img src="${selectedCat.image}" id="cat-image" class="cat-wrapper" style="width: ${BASE_ICON_SIZE}px; height: ${BASE_ICON_SIZE}px;">` };
             const catIcon = L.divIcon({ html: activeCatIconOptions.html, className: '', iconSize: [BASE_ICON_SIZE, BASE_ICON_SIZE], iconAnchor: [BASE_ICON_SIZE/2, BASE_ICON_SIZE], popupAnchor: [0, -BASE_ICON_SIZE] });
 
-            // 【修正】ピンと被らないように少し離れた場所にポップさせる
             catCurrentLatLng = getSpawnLocation(playerLatLng);
             activeCatMarker = L.marker(catCurrentLatLng, { icon: catIcon }).addTo(map);
             
@@ -271,28 +301,28 @@
             map.fire('zoomend');
         }
 
-        // 【大修正】移動するたびに呼ばれる処理（距離計算とマップの自動追従）
         function updateLocation(lat, lng) {
             const playerLatLng = L.latLng(lat, lng);
             document.getElementById('loading').style.display = 'none';
 
             if (!playerMarker) {
                 playerMarker = L.marker(playerLatLng).addTo(map);
-                map.setView(playerLatLng, 17); // 初回はズーム17で表示
+                map.setView(playerLatLng, 17);
             } else {
                 playerMarker.setLatLng(playerLatLng);
-                map.panTo(playerLatLng); // 移動に合わせてマップも自動で動く！
+                // 【修正】自動追従モード(isTracking = true)の時だけマップを動かす
+                if (isTracking) {
+                    map.panTo(playerLatLng); 
+                }
             }
 
-            // 距離の計算とゲージの更新
             if (lastLatLng && !DEBUG_MODE) {
                 const dist = getDistance(lastLatLng.lat, lastLatLng.lng, lat, lng);
-                // スマホのGPSのブレ（ノイズ）を除外するため、1m以上、かつ50m以下の移動だけをカウント
                 if (dist > 1 && dist < 50) {
                     distanceWalked += dist;
                     if (distanceWalked >= DISTANCE_TO_FOOD) {
                         foodCount++;
-                        distanceWalked = 0; // ゲージをリセット
+                        distanceWalked = 0; 
                         document.getElementById('food-count').innerHTML = `${foodCount} <span class="text-sm font-normal text-gray-600">個</span>`;
                     }
                     const remaining = Math.max(0, DISTANCE_TO_FOOD - distanceWalked);
@@ -323,7 +353,6 @@
             document.getElementById('loading').style.display = 'flex';
 
             if (navigator.geolocation) {
-                // 【大修正】getCurrentPosition（1回だけ）から watchPosition（随時更新）に変更
                 gpsWatchId = navigator.geolocation.watchPosition(
                     (position) => {
                         let lat = position.coords.latitude;
