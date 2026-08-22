@@ -26,6 +26,13 @@ const CAT_DATA = {
         description: "のんびり魚を狙っている猫。餌を自分で食べてしまう。",
         spawn_time: "all"
     },
+    "tibita": {
+        id: "tibita",
+        name: "ちびた",
+        image: "./tibita.png",
+        description: "まめな食堂の匂いにつられてきた猫。相棒の猫がいる。",
+        spawn_time: "all"
+    },
     "over_neko": {
         id: "over_neko",
         name: "オーバーオール猫",
