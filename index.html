@@ -22,10 +22,12 @@
             overflow: hidden;
         }
         
+        /* 【修正】 ease-in-out から linear（等速）に変更して滑る動きを解消 */
         .garden-cat {
             position: absolute;
-            transition: top 3s ease-in-out, left 3s ease-in-out, transform 0.5s;
+            transition: top 3s linear, left 3s linear, transform 0.5s;
             filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+            cursor: pointer;
         }
 
         .custom-popup .leaflet-popup-content-wrapper { background-color: #ffe8d6; color: #333; border-radius: 12px; font-weight: bold; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); border: 2px solid #fb923c; }
@@ -64,7 +66,6 @@
             </div>
         </div>
 
-        <!-- 【新規追加】現在地に戻るボタン（最初は透明で隠れています） -->
         <div id="recenter-container" class="ui-layer bottom-32 left-0 w-full flex justify-center transition-all duration-300 opacity-0 pointer-events-none translate-y-4">
             <button id="recenter-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-full font-bold text-base shadow-lg border-2 border-white interactive flex items-center gap-2">
                 📍 現在地に戻る
@@ -139,8 +140,6 @@
         let distanceWalked = 0;
         const DISTANCE_TO_FOOD = 50; 
         let gpsWatchId = null;
-        
-        // 【新規追加】自動追従モードかどうかのフラグ
         let isTracking = true;
 
         const catVoice = new Audio('./catvoice.mp3');
@@ -156,29 +155,22 @@
         let catTargetLatLng = null;
         let moveInterval = null;
 
-        // 【新規追加】マップを指でドラッグ（スワイプ）した時の処理
         const recenterContainer = document.getElementById('recenter-container');
         const recenterBtn = document.getElementById('recenter-btn');
 
         map.on('dragstart', () => {
             if (isTracking) {
-                isTracking = false; // 自動追従を解除
-                // 現在地に戻るボタンをフワッと表示
+                isTracking = false;
                 recenterContainer.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
                 recenterContainer.classList.add('opacity-100', 'pointer-events-auto', 'translate-y-0');
             }
         });
 
-        // 【新規追加】「現在地に戻る」ボタンを押した時の処理
         recenterBtn.addEventListener('click', () => {
-            isTracking = true; // 自動追従を再開
-            // ボタンを隠す
+            isTracking = true;
             recenterContainer.classList.remove('opacity-100', 'pointer-events-auto', 'translate-y-0');
             recenterContainer.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
-            
-            if (playerMarker) {
-                map.setView(playerMarker.getLatLng(), map.getZoom()); // 現在地へカメラを戻す
-            }
+            if (playerMarker) map.setView(playerMarker.getLatLng(), map.getZoom());
         });
 
         map.on('zoomend', function() {
@@ -310,7 +302,6 @@
                 map.setView(playerLatLng, 17);
             } else {
                 playerMarker.setLatLng(playerLatLng);
-                // 【修正】自動追従モード(isTracking = true)の時だけマップを動かす
                 if (isTracking) {
                     map.panTo(playerLatLng); 
                 }
@@ -389,13 +380,23 @@
                     const cat = CAT_DATA[catId];
                     const catElement = document.createElement('img');
                     catElement.src = cat.image;
-                    catElement.className = 'garden-cat w-24 h-24 object-contain';
+                    // interactive クラスを追加して確実にタップできるようにしています
+                    catElement.className = 'garden-cat w-24 h-24 object-contain interactive';
                     
-                    let currentTop = Math.random() * 70 + 15;
-                    let currentLeft = Math.random() * 70 + 15;
+                    // 【修正】初期位置を画面下部（65%〜85%）の芝生エリアに制限
+                    let currentTop = Math.random() * 20 + 65;
+                    let currentLeft = Math.random() * 80 + 5;
                     catElement.style.top = `${currentTop}%`;
                     catElement.style.left = `${currentLeft}%`;
                     
+                    // 【追加】タップされたら鳴いて跳ねる
+                    catElement.addEventListener('click', () => {
+                        catVoice.currentTime = 0;
+                        catVoice.play().catch(e => console.log('音声再生エラー:', e));
+                        catElement.classList.add('bounce-active');
+                        setTimeout(() => catElement.classList.remove('bounce-active'), 1000);
+                    });
+
                     gardenContainer.appendChild(catElement);
 
                     function actCat() {
@@ -403,8 +404,9 @@
                         const timer = setTimeout(() => {
                             const isMoving = Math.random() < 0.3;
                             if (isMoving) {
-                                const targetTop = Math.random() * 70 + 15;
-                                const targetLeft = Math.random() * 70 + 15;
+                                // 【修正】移動先も画面下部（65%〜85%）の芝生エリアに制限
+                                const targetTop = Math.random() * 20 + 65;
+                                const targetLeft = Math.random() * 80 + 5;
                                 
                                 if (targetLeft > currentLeft) {
                                     catElement.classList.remove('face-left');
