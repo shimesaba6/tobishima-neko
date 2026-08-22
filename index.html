@@ -40,7 +40,6 @@
         #zukan-modal.show { display: flex; }
     </style>
 </head>
-<!-- 【修正】スマホのOSボタンを回避する 100dvh を適用 -->
 <body class="w-screen relative" style="height: 100dvh;">
 
     <div id="start-screen" class="absolute inset-0 bg-[#fdf6e3] flex flex-col items-center justify-center z-[4000] transition-opacity duration-500">
@@ -59,24 +58,29 @@
             </div>
         </div>
 
-        <!-- 【大修正】タイトルを削除し、現在地だけのシンプルな表示に変更 -->
         <div class="ui-layer top-0 left-0 w-full p-4 pt-6 flex justify-center">
             <div class="bg-white/95 backdrop-blur-md px-8 py-3 rounded-full shadow-md text-center interactive border-2 border-orange-200">
                 <p id="island-name" class="text-base text-orange-700 font-black">現在地を確認中...</p>
             </div>
         </div>
 
-        <!-- 【修正】dvhのおかげで重ならないので、少し下部余白をスッキリさせました -->
         <div class="ui-layer bottom-0 left-0 w-full p-4 pb-8 flex justify-between items-end gap-2">
             <button id="go-garden-btn" class="bg-green-500 hover:bg-green-600 text-white w-16 h-16 shrink-0 rounded-full flex items-center justify-center text-3xl shadow-lg transition-transform hover:scale-105 interactive border-4 border-white">
                 🏡
             </button>
             
-            <div class="bg-white/95 backdrop-blur-md px-4 py-3 rounded-full shadow-lg flex flex-1 items-center justify-center gap-3 interactive border-2 border-orange-200 max-w-[220px]">
-                <div class="w-12 h-12 shrink-0 bg-orange-100 rounded-full flex items-center justify-center text-2xl shadow-inner">🐟</div>
-                <div class="text-center">
-                    <p class="text-xs text-gray-600 font-bold leading-none mb-1">もっているエサ</p>
-                    <p id="food-count" class="font-black text-2xl leading-none text-gray-800">3 <span class="text-sm font-normal text-gray-600">個</span></p>
+            <!-- 【大修正】エサのUIにプログレスバー（ゲージ）を追加しました -->
+            <div class="bg-white/95 backdrop-blur-md px-3 py-2 rounded-3xl shadow-lg flex flex-1 flex-col items-center justify-center interactive border-2 border-orange-200 max-w-[200px]">
+                <div class="flex items-center justify-center gap-2 mb-1 w-full">
+                    <div class="w-10 h-10 shrink-0 bg-orange-100 rounded-full flex items-center justify-center text-xl shadow-inner">🐟</div>
+                    <div class="text-center">
+                        <p class="text-[10px] text-gray-600 font-bold leading-none mb-1">もっているエサ</p>
+                        <p id="food-count" class="font-black text-2xl leading-none text-gray-800">3 <span class="text-sm font-normal text-gray-600">個</span></p>
+                    </div>
+                </div>
+                <div class="w-full bg-orange-100 rounded-full h-4 relative overflow-hidden border border-orange-200">
+                    <div id="distance-bar" class="bg-orange-500 h-full w-[0%] transition-all duration-300"></div>
+                    <p id="distance-progress" class="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-gray-800 leading-none shadow-sm">あと 50m でゲット</p>
                 </div>
             </div>
 
@@ -125,6 +129,12 @@
         let foodCount = 3;
         let zukanData = JSON.parse(localStorage.getItem('tobishima_zukan')) || [];
 
+        // 【新規追加】移動距離を計算するための変数
+        let lastLatLng = null;
+        let distanceWalked = 0;
+        const DISTANCE_TO_FOOD = 50; // 50m歩くごとにエサ1個
+        let gpsWatchId = null;
+
         const catVoice = new Audio('./catvoice.mp3');
 
         const map = L.map('map', { zoomControl: false }).setView([35.681236, 139.767125], 5);
@@ -163,6 +173,25 @@
             return null;
         }
 
+        // 【新規追加】2点間の距離（メートル）を計算する関数
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const p1 = lat1 * Math.PI/180;
+            const p2 = lat2 * Math.PI/180;
+            const dp = (lat2-lat1) * Math.PI/180;
+            const dl = (lon2-lon1) * Math.PI/180;
+            const a = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // 【修正】猫の出現位置を「少し離れた場所」にする関数
+        function getSpawnLocation(latlng) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 0.0006 + (Math.random() * 0.0006); // 近すぎず遠すぎないドーナツ状の範囲
+            return L.latLng(latlng.lat + radius * Math.sin(angle), latlng.lng + radius * Math.cos(angle));
+        }
+
         function getRandomNearby(latlng, maxOffset = 0.00005) {
             return L.latLng(latlng.lat + (Math.random() - 0.5) * maxOffset * 2, latlng.lng + (Math.random() - 0.5) * maxOffset * 2);
         }
@@ -199,7 +228,8 @@
             activeCatIconOptions = { html: `<img src="${selectedCat.image}" id="cat-image" class="cat-wrapper" style="width: ${BASE_ICON_SIZE}px; height: ${BASE_ICON_SIZE}px;">` };
             const catIcon = L.divIcon({ html: activeCatIconOptions.html, className: '', iconSize: [BASE_ICON_SIZE, BASE_ICON_SIZE], iconAnchor: [BASE_ICON_SIZE/2, BASE_ICON_SIZE], popupAnchor: [0, -BASE_ICON_SIZE] });
 
-            catCurrentLatLng = getRandomNearby(playerLatLng, 0.0002);
+            // 【修正】ピンと被らないように少し離れた場所にポップさせる
+            catCurrentLatLng = getSpawnLocation(playerLatLng);
             activeCatMarker = L.marker(catCurrentLatLng, { icon: catIcon }).addTo(map);
             
             activeCatMarker.on('click', () => {
@@ -241,18 +271,42 @@
             map.fire('zoomend');
         }
 
+        // 【大修正】移動するたびに呼ばれる処理（距離計算とマップの自動追従）
         function updateLocation(lat, lng) {
             const playerLatLng = L.latLng(lat, lng);
             document.getElementById('loading').style.display = 'none';
-            map.setView(playerLatLng, 17);
 
-            if (!playerMarker) playerMarker = L.marker(playerLatLng).addTo(map);
-            else playerMarker.setLatLng(playerLatLng);
+            if (!playerMarker) {
+                playerMarker = L.marker(playerLatLng).addTo(map);
+                map.setView(playerLatLng, 17); // 初回はズーム17で表示
+            } else {
+                playerMarker.setLatLng(playerLatLng);
+                map.panTo(playerLatLng); // 移動に合わせてマップも自動で動く！
+            }
+
+            // 距離の計算とゲージの更新
+            if (lastLatLng && !DEBUG_MODE) {
+                const dist = getDistance(lastLatLng.lat, lastLatLng.lng, lat, lng);
+                // スマホのGPSのブレ（ノイズ）を除外するため、1m以上、かつ50m以下の移動だけをカウント
+                if (dist > 1 && dist < 50) {
+                    distanceWalked += dist;
+                    if (distanceWalked >= DISTANCE_TO_FOOD) {
+                        foodCount++;
+                        distanceWalked = 0; // ゲージをリセット
+                        document.getElementById('food-count').innerHTML = `${foodCount} <span class="text-sm font-normal text-gray-600">個</span>`;
+                    }
+                    const remaining = Math.max(0, DISTANCE_TO_FOOD - distanceWalked);
+                    const progressPercent = (distanceWalked / DISTANCE_TO_FOOD) * 100;
+                    
+                    document.getElementById('distance-progress').innerText = `あと ${Math.ceil(remaining)}m でゲット`;
+                    document.getElementById('distance-bar').style.width = `${progressPercent}%`;
+                }
+            }
+            lastLatLng = { lat: lat, lng: lng };
 
             currentIslandKey = checkIsland(lat, lng);
             
             if (currentIslandKey) { 
-                // 【修正】文字をシンプルに
                 document.getElementById('island-name').innerText = `〜 ${ISLANDS[currentIslandKey].name} 〜`;
                 if (!window.spawnTimer) window.spawnTimer = setInterval(() => { if (!isCatSpawned && Math.random() < 0.2) spawnCat(playerMarker.getLatLng()); }, 10000); 
             } else {
@@ -269,7 +323,8 @@
             document.getElementById('loading').style.display = 'flex';
 
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
+                // 【大修正】getCurrentPosition（1回だけ）から watchPosition（随時更新）に変更
+                gpsWatchId = navigator.geolocation.watchPosition(
                     (position) => {
                         let lat = position.coords.latitude;
                         let lng = position.coords.longitude;
@@ -277,15 +332,13 @@
                         updateLocation(lat, lng);
                     },
                     (error) => {
-                        alert("GPSを取得できませんでした。ブラウザの設定で位置情報を許可してください。");
-                        document.getElementById('loading').innerHTML = '<p class="text-red-500 font-bold">GPSエラー</p>';
+                        console.log("GPSエラー:", error);
                     },
-                    { enableHighAccuracy: true }
+                    { enableHighAccuracy: true, maximumAge: 2000, timeout: 5000 }
                 );
             }
         });
 
-        // 庭モードのUI制御
         const mapScreen = document.getElementById('map-screen');
         const gardenScreen = document.getElementById('garden-screen');
         const goGardenBtn = document.getElementById('go-garden-btn');
@@ -361,7 +414,6 @@
             map.invalidateSize();
         });
 
-        // 図鑑のUI制御
         const zukanModal = document.getElementById('zukan-modal');
         const openZukanBtn = document.getElementById('open-zukan');
         const closeZukanBtn = document.getElementById('close-zukan');
