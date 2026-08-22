@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>島ねこコレクション</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { font-family: 'Hiragino Maru Gothic ProN', 'Rounded M+ 1c', sans-serif; background-color: #fdf6e3; color: #5c4b51; margin: 0; padding: 0; overflow: hidden; }
+        
+        /* マップ画面用 */
+        #map-screen { position: absolute; top: 0; bottom: 0; left: 0; right: 0; }
+        #map { height: 100%; width: 100%; z-index: 0; }
+        .ui-layer { position: absolute; z-index: 1000; pointer-events: none; }
+        .interactive { pointer-events: auto; }
+        
+        /* 庭画面用（最初は非表示） */
+        #garden-screen { 
+            display: none; position: absolute; inset: 0; z-index: 1500; 
+            background-image: url('./garden.png'); 
+            background-size: cover; background-position: center; 
+            overflow: hidden;
+        }
+        
+        /* 庭を歩く猫のスタイル */
+        .garden-cat {
+            position: absolute;
+            transition: top 3s ease-in-out, left 3s ease-in-out, transform 0.5s;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+        }
+
+        .custom-popup .leaflet-popup-content-wrapper { background-color: #ffe8d6; color: #5c4b51; border-radius: 12px; font-weight: bold; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .custom-popup .leaflet-popup-tip { background-color: #ffe8d6; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        .bounce-active { animation: bounce 0.5s ease 2; }
+        .face-left { transform: scaleX(-1); }
+        .face-right { transform: scaleX(1); }
+        .cat-wrapper { transition: transform 0.3s ease, opacity 0.5s ease, width 0.3s ease, height 0.3s ease; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3)); }
+        .fade-out { opacity: 0; }
+        #zukan-modal { display: none; }
+        #zukan-modal.show { display: flex; }
+    </style>
+</head>
+<body class="h-screen w-screen relative">
+
+    <!-- スタート画面 -->
+    <div id="start-screen" class="absolute inset-0 bg-[#fdf6e3] flex flex-col items-center justify-center z-[4000] transition-opacity duration-500">
+        <h1 class="text-4xl font-black text-orange-600 mb-8 text-center leading-tight">とびしま<br>ねこあつめ</h1>
+        <button id="start-btn" class="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-full font-bold text-xl shadow-xl transition-transform hover:scale-105 border-4 border-white interactive">
+            ぼうけんをはじめる
+        </button>
+        <p class="text-xs text-gray-500 mt-6 font-bold">※ねこが現れると音が鳴ります</p>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- マップ画面エリア -->
+    <!-- ========================================== -->
+    <div id="map-screen">
+        <div id="map"></div>
+        <div id="loading" class="absolute inset-0 bg-[#fdf6e3]/90 flex items-center justify-center z-[2000] hidden">
+            <div class="text-center">
+                <p class="text-xl font-bold animate-pulse text-orange-600">GPSを探していますニャ...</p>
+            </div>
+        </div>
+
+        <div class="ui-layer top-0 left-0 w-full p-4 pt-8 flex justify-center">
+            <div class="bg-white/90 backdrop-blur-md px-6 py-2 rounded-full shadow-md text-center interactive border border-gray-100">
+                <h1 class="text-lg font-bold text-orange-600 leading-tight">とびしま ねこあつめ</h1>
+                <p id="island-name" class="text-[10px] text-gray-500 font-bold mt-0.5">現在地を確認中...</p>
+            </div>
+        </div>
+
+        <div class="ui-layer bottom-0 left-0 w-full p-4 pb-8 flex justify-between items-end">
+            <!-- 庭へ行くボタン -->
+            <button id="go-garden-btn" class="bg-green-500 hover:bg-green-600 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg transition-transform hover:scale-105 interactive border-2 border-white mb-2">
+                🏡
+            </button>
+            
+            <div class="bg-white/90 backdrop-blur-md pl-2 pr-5 py-2 rounded-full shadow-lg flex items-center gap-3 interactive border border-gray-100 mx-2">
+                <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-xl shadow-inner">🐟</div>
+                <div>
+                    <p class="text-[9px] text-gray-400 font-bold mb-0.5">もっているエサ</p>
+                    <p id="food-count" class="font-black text-lg leading-none">3 <span class="text-sm font-normal text-gray-500">個</span></p>
+                </div>
+            </div>
+
+            <button id="open-zukan" class="bg-indigo-500 hover:bg-indigo-600 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg transition-transform hover:scale-105 interactive border-2 border-white mb-2">
+                📖
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 庭画面エリア -->
+    <!-- ========================================== -->
+    <div id="garden-screen">
+        <div class="absolute top-8 left-4 z-10">
+            <button id="back-map-btn" class="bg-white/90 backdrop-blur-md text-gray-700 px-4 py-2 rounded-full font-bold shadow-md border border-gray-100 hover:bg-gray-50 interactive">
+                ◀ マップにもどる
+            </button>
+        </div>
+        
+        <div id="garden-container" class="w-full h-full relative"></div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 図鑑モーダル -->
+    <!-- ========================================== -->
+    <div id="zukan-modal" class="fixed inset-0 bg-black/60 z-[3000] items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl relative interactive">
+            <h2 class="text-xl font-black text-center text-indigo-800 mb-4">ねこ図鑑</h2>
+            <div id="cat-detail" class="bg-white rounded-2xl p-4 mb-4 min-h-[90px] flex items-center justify-center text-center shadow-inner border border-gray-100">
+                <p class="text-gray-400 text-sm font-bold">ねこをタップすると<br>くわしい情報がみれるニャ</p>
+            </div>
+            <div class="grid grid-cols-3 gap-3 max-h-[40vh] overflow-y-auto p-1" id="zukan-list"></div>
+            <div class="mt-6 text-center">
+                <button id="close-zukan" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-8 py-3 rounded-full font-bold transition-colors shadow-sm">とじる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 別ファイルの猫データを読み込む -->
+    <script src="./cats.js"></script>
+
+    <script>
+        const DEBUG_MODE = false; 
+        const DUMMY_LAT = 34.1795;
+        const DUMMY_LNG = 132.8365;
+
+        const ISLANDS = {
+            "osaki_shimojima": { name: "大崎下島", bounds: { minLat: 34.160, maxLat: 34.200, minLng: 132.800, maxLng: 132.870 } },
+            "chiba_test": { name: "千葉テストエリア", bounds: { minLat: 35.0, maxLat: 36.0, minLng: 139.0, maxLng: 141.0 } }
+        };
+
+        let currentIslandKey = null;
+        let isCatSpawned = false;
+        let foodCount = 3;
+        let zukanData = JSON.parse(localStorage.getItem('tobishima_zukan')) || [];
+
+        const catVoice = new Audio('./catvoice.mp3');
+
+        const map = L.map('map', { zoomControl: false }).setView([35.681236, 139.767125], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+
+        const BASE_ICON_SIZE = 50;
+        let playerMarker = null;
+        let activeCatMarker = null; 
+        let activeCatIconOptions = null; 
+        let catCurrentLatLng = null;
+        let catTargetLatLng = null;
+        let moveInterval = null;
+
+        map.on('zoomend', function() {
+            if(activeCatMarker && activeCatIconOptions) {
+                const zoom = map.getZoom();
+                let scale = Math.pow(1.5, zoom - 17);
+                const newSize = Math.max(30, Math.min(BASE_ICON_SIZE * scale, 150));
+                const catImg = document.getElementById('cat-image');
+                if(catImg) { catImg.style.width = `${newSize}px`; catImg.style.height = `${newSize}px`; }
+                
+                const newIcon = L.divIcon({
+                    html: activeCatIconOptions.html.replace(/width: \d+px; height: \d+px;/, `width: ${newSize}px; height: ${newSize}px;`),
+                    className: '', iconSize: [newSize, newSize], iconAnchor: [newSize/2, newSize], popupAnchor: [0, -newSize]
+                });
+                activeCatMarker.setIcon(newIcon);
+            }
+        });
+
+        function checkIsland(lat, lng) {
+            for (const key in ISLANDS) {
+                const b = ISLANDS[key].bounds;
+                if (lat >= b.minLat && lat <= b.maxLat && lng >= b.minLng && lng <= b.maxLng) return key;
+            }
+            return null;
+        }
+
+        function getRandomNearby(latlng, maxOffset = 0.00005) {
+            return L.latLng(latlng.lat + (Math.random() - 0.5) * maxOffset * 2, latlng.lng + (Math.random() - 0.5) * maxOffset * 2);
+        }
+
+        function addToZukan(catId) {
+            if (!zukanData.includes(catId)) {
+                zukanData.push(catId);
+                localStorage.setItem('tobishima_zukan', JSON.stringify(zukanData));
+            }
+        }
+
+        function spawnCat(playerLatLng) {
+            if (isCatSpawned) return;
+            
+            const currentHour = new Date().getHours();
+            const isNight = (currentHour >= 19 || currentHour < 5);
+            const availableCats = [];
+            
+            for (const key in CAT_DATA) {
+                const cat = CAT_DATA[key];
+                if (cat.spawn_time === "all") availableCats.push(cat);
+                else if (cat.spawn_time === "night" && isNight) availableCats.push(cat);
+            }
+
+            if (availableCats.length === 0) return;
+
+            const selectedCat = availableCats[Math.floor(Math.random() * availableCats.length)];
+            isCatSpawned = true;
+
+            catVoice.currentTime = 0; 
+            catVoice.play().catch(e => console.log('音声再生エラー:', e));
+            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+            activeCatIconOptions = { html: `<img src="${selectedCat.image}" id="cat-image" class="cat-wrapper" style="width: ${BASE_ICON_SIZE}px; height: ${BASE_ICON_SIZE}px;">` };
+            const catIcon = L.divIcon({ html: activeCatIconOptions.html, className: '', iconSize: [BASE_ICON_SIZE, BASE_ICON_SIZE], iconAnchor: [BASE_ICON_SIZE/2, BASE_ICON_SIZE], popupAnchor: [0, -BASE_ICON_SIZE] });
+
+            catCurrentLatLng = getRandomNearby(playerLatLng, 0.0002);
+            activeCatMarker = L.marker(catCurrentLatLng, { icon: catIcon }).addTo(map);
+            
+            activeCatMarker.on('click', () => {
+                if(foodCount > 0) {
+                    foodCount--;
+                    document.getElementById('food-count').innerHTML = `${foodCount} <span class="text-sm font-normal text-gray-500">個</span>`;
+                    addToZukan(selectedCat.id);
+                    activeCatMarker.bindPopup(`<b>「おいしいニャ！ありがとう！」<br><span class="text-[10px] text-orange-500 block mt-1">お庭に遊びにくるようになったニャ！</span></b>`, { className: 'custom-popup' }).openPopup();
+                    
+                    setTimeout(() => {
+                        const catImg = document.getElementById('cat-image');
+                        if(catImg) catImg.classList.add('fade-out');
+                        setTimeout(() => { map.removeLayer(activeCatMarker); clearInterval(moveInterval); isCatSpawned = false; }, 500);
+                    }, 3000);
+                } else {
+                    activeCatMarker.bindPopup('<b>「エサがないニャ...」</b>', { className: 'custom-popup' }).openPopup();
+                }
+            });
+
+            catTargetLatLng = getRandomNearby(catCurrentLatLng, 0.0001);
+            moveInterval = setInterval(() => {
+                const speed = 0.02;
+                const dLat = (catTargetLatLng.lat - catCurrentLatLng.lat) * speed;
+                const dLng = (catTargetLatLng.lng - catCurrentLatLng.lng) * speed;
+                catCurrentLatLng = L.latLng(catCurrentLatLng.lat + dLat, catCurrentLatLng.lng + dLng);
+                activeCatMarker.setLatLng(catCurrentLatLng);
+
+                const catImg = document.getElementById('cat-image');
+                if (catImg) {
+                    if (dLng > 0) { catImg.classList.remove('face-left'); catImg.classList.add('face-right'); } 
+                    else { catImg.classList.remove('face-right'); catImg.classList.add('face-left'); }
+                    if (Math.random() < 0.02) { catImg.classList.add('bounce-active'); setTimeout(() => catImg.classList.remove('bounce-active'), 1000); }
+                }
+
+                if (Math.abs(catTargetLatLng.lat - catCurrentLatLng.lat) < 0.000001 && Math.abs(catTargetLatLng.lng - catCurrentLatLng.lng) < 0.000001) {
+                    catTargetLatLng = getRandomNearby(catCurrentLatLng, 0.0001);
+                }
+            }, 50);
+            map.fire('zoomend');
+        }
+
+        function updateLocation(lat, lng) {
+            const playerLatLng = L.latLng(lat, lng);
+            document.getElementById('loading').style.display = 'none';
+            map.setView(playerLatLng, 17);
+
+            if (!playerMarker) playerMarker = L.marker(playerLatLng).addTo(map);
+            else playerMarker.setLatLng(playerLatLng);
+
+            currentIslandKey = checkIsland(lat, lng);
+            
+            // 【修正】「大崎下島」固定ではなく、ISLANDSに登録されている場所ならOKにする
+            if (currentIslandKey) { 
+                document.getElementById('island-name').innerText = `〜 ${ISLANDS[currentIslandKey].name} 〜`;
+                if (!window.spawnTimer) window.spawnTimer = setInterval(() => { if (!isCatSpawned && Math.random() < 0.2) spawnCat(playerMarker.getLatLng()); }, 10000); 
+            } else {
+                document.getElementById('island-name').innerText = "ここはねこがいないエリアのようです";
+                if(window.spawnTimer) { clearInterval(window.spawnTimer); window.spawnTimer = null; }
+            }
+        }
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            catVoice.play().then(() => { catVoice.pause(); catVoice.currentTime = 0; }).catch(() => {});
+            const startScreen = document.getElementById('start-screen');
+            startScreen.style.opacity = '0';
+            setTimeout(() => { startScreen.style.display = 'none'; }, 500);
+            document.getElementById('loading').style.display = 'flex';
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        let lat = position.coords.latitude;
+                        let lng = position.coords.longitude;
+                        if (DEBUG_MODE) { lat = DUMMY_LAT; lng = DUMMY_LNG; }
+                        updateLocation(lat, lng);
+                    },
+                    (error) => {
+                        alert("GPSを取得できませんでした。ブラウザの設定で位置情報を許可してください。");
+                        document.getElementById('loading').innerHTML = '<p class="text-red-500 font-bold">GPSエラー</p>';
+                    },
+                    { enableHighAccuracy: true }
+                );
+            }
+        });
+
+        // ==========================================
+        // 庭モードのUI制御（気まぐれAI版）
+        // ==========================================
+        const mapScreen = document.getElementById('map-screen');
+        const gardenScreen = document.getElementById('garden-screen');
+        const goGardenBtn = document.getElementById('go-garden-btn');
+        const backMapBtn = document.getElementById('back-map-btn');
+        const gardenContainer = document.getElementById('garden-container');
+        
+        let gardenIntervals = []; // 庭の猫たちのタイマー配列
+
+        // 庭へ行くボタンを押した時
+        goGardenBtn.addEventListener('click', () => {
+            mapScreen.style.display = 'none';
+            gardenScreen.style.display = 'block';
+            
+            gardenContainer.innerHTML = '';
+            gardenIntervals.forEach(clearTimeout); 
+            gardenIntervals = [];
+
+            zukanData.forEach(catId => {
+                if (CAT_DATA[catId]) {
+                    const cat = CAT_DATA[catId];
+                    const catElement = document.createElement('img');
+                    catElement.src = cat.image;
+                    catElement.className = 'garden-cat w-16 h-16 object-contain';
+                    
+                    let currentTop = Math.random() * 70 + 15;
+                    let currentLeft = Math.random() * 70 + 15;
+                    catElement.style.top = `${currentTop}%`;
+                    catElement.style.left = `${currentLeft}%`;
+                    
+                    gardenContainer.appendChild(catElement);
+
+                    // それぞれの猫が独立して動く再帰関数（気まぐれAI）
+                    function actCat() {
+                        // 次の行動を起こすまでの待機時間をランダムに決定（2秒〜8秒）
+                        const nextActionTime = Math.random() * 6000 + 2000;
+                        
+                        const timer = setTimeout(() => {
+                            // 行動の抽選（70%の確率でサボる、30%で移動する）
+                            const isMoving = Math.random() < 0.3;
+                            
+                            if (isMoving) {
+                                const targetTop = Math.random() * 70 + 15;
+                                const targetLeft = Math.random() * 70 + 15;
+                                
+                                if (targetLeft > currentLeft) {
+                                    catElement.classList.remove('face-left');
+                                    catElement.classList.add('face-right');
+                                } else {
+                                    catElement.classList.remove('face-right');
+                                    catElement.classList.add('face-left');
+                                }
+                                
+                                catElement.style.top = `${targetTop}%`;
+                                catElement.style.left = `${targetLeft}%`;
+                                
+                                // 移動する時のごくまれな確率でジャンプ
+                                if (Math.random() < 0.2) {
+                                    catElement.classList.add('bounce-active');
+                                    setTimeout(() => catElement.classList.remove('bounce-active'), 1000);
+                                }
+                                
+                                currentTop = targetTop;
+                                currentLeft = targetLeft;
+                            }
+                            // 行動（またはサボり）が終わったら、次の行動を予約する
+                            actCat();
+                        }, nextActionTime);
+                        
+                        gardenIntervals.push(timer);
+                    }
+                    
+                    // 庭に入った直後に、各猫のAIをスタートさせる
+                    actCat();
+                }
+            });
+        });
+
+        // マップに戻るボタンを押した時
+        backMapBtn.addEventListener('click', () => {
+            gardenScreen.style.display = 'none';
+            mapScreen.style.display = 'block';
+            
+            // clearTimeoutで猫の動きを完全に止める
+            gardenIntervals.forEach(clearTimeout);
+            gardenIntervals = [];
+            gardenContainer.innerHTML = '';
+            
+            map.invalidateSize();
+        });
+
+        // ==========================================
+        // 図鑑のUI制御
+        // ==========================================
+        const zukanModal = document.getElementById('zukan-modal');
+        const openZukanBtn = document.getElementById('open-zukan');
+        const closeZukanBtn = document.getElementById('close-zukan');
+        const zukanList = document.getElementById('zukan-list');
+        const catDetail = document.getElementById('cat-detail');
+
+        openZukanBtn.addEventListener('click', () => {
+            zukanList.innerHTML = '';
+            catDetail.innerHTML = '<p class="text-gray-400 text-sm font-bold">ねこをタップすると<br>くわしい情報がみれるニャ</p>';
+            
+            for (const catId in CAT_DATA) {
+                const cat = CAT_DATA[catId];
+                const isDiscovered = zukanData.includes(catId);
+                const filterStyle = isDiscovered ? "" : "filter: brightness(0) invert(0.8);";
+                const catName = isDiscovered ? cat.name : "？？？";
+
+                const catElement = document.createElement('div');
+                catElement.className = "flex flex-col items-center p-2 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:bg-orange-50 transition-colors";
+                catElement.innerHTML = `
+                    <img src="${cat.image}" class="w-14 h-14 object-contain mb-1" style="${filterStyle}">
+                    <p class="text-[10px] font-bold text-gray-700">${catName}</p>
+                `;
+                
+                catElement.addEventListener('click', () => {
+                    if (isDiscovered) {
+                        catDetail.innerHTML = `<div class="flex items-center gap-4 w-full"><div class="w-16 h-16 shrink-0 bg-orange-100 rounded-full flex items-center justify-center border-2 border-orange-200"><img src="${cat.image}" class="w-12 h-12 object-contain"></div><div class="text-left"><p class="font-black text-indigo-800 text-lg leading-none">${cat.name}</p><p class="text-xs text-gray-600 mt-2 font-medium">${cat.description}</p></div></div>`;
+                    } else {
+                        catDetail.innerHTML = `<div class="flex items-center gap-4 w-full"><div class="w-16 h-16 shrink-0 bg-gray-200 rounded-full flex items-center justify-center text-2xl text-gray-400 font-black border-2 border-gray-300">？</div><div class="text-left"><p class="font-black text-gray-500 text-lg leading-none">？？？</p><p class="text-xs text-gray-400 mt-2 font-medium">まだであっていないニャ<br>島をぼうけんしてさがそう！</p></div></div>`;
+                    }
+                });
+
+                zukanList.appendChild(catElement);
+            }
+            zukanModal.classList.add('show');
+        });
+
+        closeZukanBtn.addEventListener('click', () => { zukanModal.classList.remove('show'); });
+    </script>
+</body>
+</html>
