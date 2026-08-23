@@ -26,6 +26,20 @@ const CAT_DATA = {
         description: "のんびり魚を狙っている猫。餌を自分で食べてしまう。",
         spawn_time: "all"
     },
+    "yumineko": {
+        id: "yumineko",
+        name: "ゆみ猫",
+        image: "./yumi.png",
+        description: "弓道が得意な猫。みかん農家をしている。よくまめな食堂で夕飯を食べる",
+        spawn_time: "all"
+    },
+    "umioyaji": {
+        id: "umioyaji",
+        name: "海おじ猫",
+        image: "./umioyaji.png",
+        description: "派手なアロハシャツを好むガッチリ体型オジサン。時々遊びに来ては海に出る。多分釣りが好き。",
+        spawn_time: "all"
+    },
     "tibita": {
         id: "tibita",
         name: "ちびた",
