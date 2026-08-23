@@ -105,11 +105,9 @@
         <div id="garden-container" class="w-full h-full relative"></div>
     </div>
 
-    <!-- 図鑑モーダル -->
     <div id="zukan-modal" class="fixed inset-0 bg-black/60 z-[3000] items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl relative interactive border-4 border-indigo-200 flex flex-col max-h-[90dvh]">
             <h2 class="text-2xl font-black text-center text-indigo-800 mb-1">ねこ図鑑</h2>
-            <!-- 【追加】タップで拡大できる案内文 -->
             <p class="text-center text-[11px] text-orange-600 font-bold mb-4">※まるい画像をタップで大きくみれます</p>
             
             <div id="cat-detail" class="bg-white rounded-2xl p-4 mb-4 min-h-[100px] flex items-center justify-center text-center shadow-inner border border-gray-200 shrink-0">
@@ -122,14 +120,12 @@
         </div>
     </div>
 
-    <!-- 【追加】画像を大きく表示するためのモーダル -->
-    <div id="image-modal" class="fixed inset-0 bg-black/80 z-[5000] hidden items-center justify-center p-4 backdrop-blur-md transition-opacity duration-300 opacity-0 interactive">
-        <div class="relative w-full max-w-md flex flex-col items-center">
-            <!-- 閉じるボタン -->
-            <button id="close-image-modal" class="absolute -top-14 right-2 text-white text-5xl font-bold drop-shadow-md p-2">&times;</button>
-            <!-- 拡大された画像 -->
-            <img id="enlarged-image" src="" class="w-[90%] max-h-[70dvh] object-contain filter drop-shadow-[0_10px_15px_rgba(255,255,255,0.3)]">
+    <!-- 【修正】構造を作り直し、画像とボタンを確実に中央に配置 -->
+    <div id="image-modal" class="fixed inset-0 bg-black/80 z-[5000] hidden flex-col items-center justify-center p-4 backdrop-blur-md transition-opacity duration-300 opacity-0 interactive">
+        <div class="w-full max-w-md flex justify-end mb-2 pr-4">
+            <button id="close-image-modal" class="text-white text-5xl font-bold drop-shadow-md">&times;</button>
         </div>
+        <img id="enlarged-image" src="" class="w-[90%] max-w-[300px] object-contain filter drop-shadow-[0_10px_15px_rgba(255,255,255,0.3)]">
     </div>
 
     <script src="./cats.js"></script>
@@ -454,29 +450,27 @@
             map.invalidateSize();
         });
 
-        // ==========================================
-        // 図鑑のUI制御と画像拡大機能
-        // ==========================================
         const zukanModal = document.getElementById('zukan-modal');
         const openZukanBtn = document.getElementById('open-zukan');
         const closeZukanBtn = document.getElementById('close-zukan');
         const zukanList = document.getElementById('zukan-list');
         const catDetail = document.getElementById('cat-detail');
         
-        // 拡大画像モーダルの要素
         const imageModal = document.getElementById('image-modal');
         const closeImageModalBtn = document.getElementById('close-image-modal');
         const enlargedImage = document.getElementById('enlarged-image');
 
-        // 拡大モーダルを閉じる処理
         function closeImageModal() {
             imageModal.classList.add('opacity-0');
-            setTimeout(() => imageModal.classList.add('hidden'), 300);
+            setTimeout(() => {
+                imageModal.classList.remove('flex');
+                imageModal.classList.add('hidden');
+            }, 300);
         }
         
         closeImageModalBtn.addEventListener('click', closeImageModal);
         imageModal.addEventListener('click', (e) => {
-            if (e.target === imageModal) closeImageModal(); // 黒い背景部分をタップしても閉じる
+            if (e.target === imageModal) closeImageModal(); 
         });
 
         openZukanBtn.addEventListener('click', () => {
@@ -498,14 +492,12 @@
                 
                 catElement.addEventListener('click', () => {
                     if (isDiscovered) {
-                        // 【修正】画像のコンテナに id="detail-img-btn" と cursor-pointer などのスタイルを追加
                         catDetail.innerHTML = `<div class="flex items-center gap-4 w-full"><div id="detail-img-btn" class="w-20 h-20 shrink-0 bg-orange-100 rounded-full flex items-center justify-center border-4 border-orange-200 cursor-pointer transition-transform hover:scale-110 active:scale-95 shadow-md"><img src="${cat.image}" class="w-16 h-16 object-contain pointer-events-none"></div><div class="text-left"><p class="font-black text-indigo-800 text-xl leading-none">${cat.name}</p><p class="text-sm text-gray-700 mt-2 font-medium">${cat.description}</p></div></div>`;
                         
-                        // 画像拡大のイベントをセット
                         document.getElementById('detail-img-btn').addEventListener('click', () => {
                             enlargedImage.src = cat.image;
                             imageModal.classList.remove('hidden');
-                            // 少し遅延させてから透明度をなくす（フワッと表示させるため）
+                            imageModal.classList.add('flex');
                             setTimeout(() => imageModal.classList.remove('opacity-0'), 10);
                         });
                         
