@@ -22,7 +22,6 @@
             overflow: hidden;
         }
         
-        /* 【修正】 ease-in-out から linear（等速）に変更して滑る動きを解消 */
         .garden-cat {
             position: absolute;
             transition: top 3s linear, left 3s linear, transform 0.5s;
@@ -106,16 +105,30 @@
         <div id="garden-container" class="w-full h-full relative"></div>
     </div>
 
+    <!-- 図鑑モーダル -->
     <div id="zukan-modal" class="fixed inset-0 bg-black/60 z-[3000] items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl relative interactive border-4 border-indigo-200">
-            <h2 class="text-2xl font-black text-center text-indigo-800 mb-4">ねこ図鑑</h2>
-            <div id="cat-detail" class="bg-white rounded-2xl p-4 mb-4 min-h-[100px] flex items-center justify-center text-center shadow-inner border border-gray-200">
+        <div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl relative interactive border-4 border-indigo-200 flex flex-col max-h-[90dvh]">
+            <h2 class="text-2xl font-black text-center text-indigo-800 mb-1">ねこ図鑑</h2>
+            <!-- 【追加】タップで拡大できる案内文 -->
+            <p class="text-center text-[11px] text-orange-600 font-bold mb-4">※まるい画像をタップで大きくみれます</p>
+            
+            <div id="cat-detail" class="bg-white rounded-2xl p-4 mb-4 min-h-[100px] flex items-center justify-center text-center shadow-inner border border-gray-200 shrink-0">
                 <p class="text-gray-500 text-base font-bold">ねこをタップすると<br>くわしい情報がみれるニャ</p>
             </div>
-            <div class="grid grid-cols-3 gap-3 max-h-[40vh] overflow-y-auto p-1" id="zukan-list"></div>
-            <div class="mt-6 text-center">
+            <div class="grid grid-cols-3 gap-3 overflow-y-auto p-1 flex-1" id="zukan-list"></div>
+            <div class="mt-6 text-center shrink-0">
                 <button id="close-zukan" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-10 py-4 rounded-full font-bold text-lg transition-colors shadow-sm">とじる</button>
             </div>
+        </div>
+    </div>
+
+    <!-- 【追加】画像を大きく表示するためのモーダル -->
+    <div id="image-modal" class="fixed inset-0 bg-black/80 z-[5000] hidden items-center justify-center p-4 backdrop-blur-md transition-opacity duration-300 opacity-0 interactive">
+        <div class="relative w-full max-w-md flex flex-col items-center">
+            <!-- 閉じるボタン -->
+            <button id="close-image-modal" class="absolute -top-14 right-2 text-white text-5xl font-bold drop-shadow-md p-2">&times;</button>
+            <!-- 拡大された画像 -->
+            <img id="enlarged-image" src="" class="w-[90%] max-h-[70dvh] object-contain filter drop-shadow-[0_10px_15px_rgba(255,255,255,0.3)]">
         </div>
     </div>
 
@@ -380,16 +393,13 @@
                     const cat = CAT_DATA[catId];
                     const catElement = document.createElement('img');
                     catElement.src = cat.image;
-                    // interactive クラスを追加して確実にタップできるようにしています
                     catElement.className = 'garden-cat w-24 h-24 object-contain interactive';
                     
-                    // 【修正】初期位置を画面下部（65%〜85%）の芝生エリアに制限
                     let currentTop = Math.random() * 20 + 65;
                     let currentLeft = Math.random() * 80 + 5;
                     catElement.style.top = `${currentTop}%`;
                     catElement.style.left = `${currentLeft}%`;
                     
-                    // 【追加】タップされたら鳴いて跳ねる
                     catElement.addEventListener('click', () => {
                         catVoice.currentTime = 0;
                         catVoice.play().catch(e => console.log('音声再生エラー:', e));
@@ -404,7 +414,6 @@
                         const timer = setTimeout(() => {
                             const isMoving = Math.random() < 0.3;
                             if (isMoving) {
-                                // 【修正】移動先も画面下部（65%〜85%）の芝生エリアに制限
                                 const targetTop = Math.random() * 20 + 65;
                                 const targetLeft = Math.random() * 80 + 5;
                                 
@@ -445,11 +454,30 @@
             map.invalidateSize();
         });
 
+        // ==========================================
+        // 図鑑のUI制御と画像拡大機能
+        // ==========================================
         const zukanModal = document.getElementById('zukan-modal');
         const openZukanBtn = document.getElementById('open-zukan');
         const closeZukanBtn = document.getElementById('close-zukan');
         const zukanList = document.getElementById('zukan-list');
         const catDetail = document.getElementById('cat-detail');
+        
+        // 拡大画像モーダルの要素
+        const imageModal = document.getElementById('image-modal');
+        const closeImageModalBtn = document.getElementById('close-image-modal');
+        const enlargedImage = document.getElementById('enlarged-image');
+
+        // 拡大モーダルを閉じる処理
+        function closeImageModal() {
+            imageModal.classList.add('opacity-0');
+            setTimeout(() => imageModal.classList.add('hidden'), 300);
+        }
+        
+        closeImageModalBtn.addEventListener('click', closeImageModal);
+        imageModal.addEventListener('click', (e) => {
+            if (e.target === imageModal) closeImageModal(); // 黒い背景部分をタップしても閉じる
+        });
 
         openZukanBtn.addEventListener('click', () => {
             zukanList.innerHTML = '';
@@ -470,7 +498,17 @@
                 
                 catElement.addEventListener('click', () => {
                     if (isDiscovered) {
-                        catDetail.innerHTML = `<div class="flex items-center gap-4 w-full"><div class="w-20 h-20 shrink-0 bg-orange-100 rounded-full flex items-center justify-center border-4 border-orange-200"><img src="${cat.image}" class="w-16 h-16 object-contain"></div><div class="text-left"><p class="font-black text-indigo-800 text-xl leading-none">${cat.name}</p><p class="text-sm text-gray-700 mt-2 font-medium">${cat.description}</p></div></div>`;
+                        // 【修正】画像のコンテナに id="detail-img-btn" と cursor-pointer などのスタイルを追加
+                        catDetail.innerHTML = `<div class="flex items-center gap-4 w-full"><div id="detail-img-btn" class="w-20 h-20 shrink-0 bg-orange-100 rounded-full flex items-center justify-center border-4 border-orange-200 cursor-pointer transition-transform hover:scale-110 active:scale-95 shadow-md"><img src="${cat.image}" class="w-16 h-16 object-contain pointer-events-none"></div><div class="text-left"><p class="font-black text-indigo-800 text-xl leading-none">${cat.name}</p><p class="text-sm text-gray-700 mt-2 font-medium">${cat.description}</p></div></div>`;
+                        
+                        // 画像拡大のイベントをセット
+                        document.getElementById('detail-img-btn').addEventListener('click', () => {
+                            enlargedImage.src = cat.image;
+                            imageModal.classList.remove('hidden');
+                            // 少し遅延させてから透明度をなくす（フワッと表示させるため）
+                            setTimeout(() => imageModal.classList.remove('opacity-0'), 10);
+                        });
+                        
                     } else {
                         catDetail.innerHTML = `<div class="flex items-center gap-4 w-full"><div class="w-20 h-20 shrink-0 bg-gray-200 rounded-full flex items-center justify-center text-3xl text-gray-400 font-black border-4 border-gray-300">？</div><div class="text-left"><p class="font-black text-gray-500 text-xl leading-none">？？？</p><p class="text-sm text-gray-500 mt-2 font-medium">まだであっていないニャ<br>島をぼうけんしてさがそう！</p></div></div>`;
                     }
