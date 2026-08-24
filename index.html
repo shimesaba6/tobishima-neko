@@ -301,6 +301,35 @@
             }, 50);
             map.fire('zoomend');
         }
+// 起動時にURLの「合言葉」をチェックする処理
+window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const unlockCatId = urlParams.get('unlock'); // ?unlock=qoyatu を読み取る
+
+    if (unlockCatId && CAT_DATA[unlockCatId]) {
+        // すでに図鑑に入っているかチェックして、なければ追加
+        let currentZukan = JSON.parse(localStorage.getItem('tobishima_zukan')) || [];
+        if (!currentZukan.includes(unlockCatId)) {
+            currentZukan.push(unlockCatId);
+            localStorage.setItem('tobishima_zukan', JSON.stringify(currentZukan));
+        }
+
+        // スタート画面が消えたあとに、特別な演出（ポップアップ）を出す
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const cat = CAT_DATA[unlockCatId];
+                catVoice.currentTime = 0;
+                catVoice.play().catch(e => {});
+                
+                // 画面中央にドーンと祝福ポップアップを出す
+                alert(`🎉 シークレット猫「${cat.name}」をゲットしたニャ！\n図鑑と庭をチェックしてね！`);
+                
+                // URLから ?unlock=... を綺麗に消す（何度もリロードした時に暴発しないため）
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }, 1000);
+        });
+    }
+});
 
         function updateLocation(lat, lng) {
             const playerLatLng = L.latLng(lat, lng);

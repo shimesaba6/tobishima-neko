@@ -40,6 +40,13 @@ const CAT_DATA = {
         description: "派手なアロハシャツを好むガッチリ体型オジサン。時々遊びに来ては海に出る。多分釣りが好き。",
         spawn_time: "all"
     },
+    "qoyatu": {
+        id: "qoyatu",
+        name: "おやつ猫",
+        image: "./qoyatu.png",
+        description: "『ベジュ』と『ちびた』は〇ゅ～るが大好き。特別な場所でした出会えないレア。",
+        spawn_time: "all"
+    },
     "tibita": {
         id: "tibita",
         name: "ちびた",
