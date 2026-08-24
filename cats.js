@@ -44,8 +44,15 @@ const CAT_DATA = {
         id: "qoyatu",
         name: "おやつ猫",
         image: "./qoyatu.png",
-        description: "『ベジュ』と『ちびた』は〇ゅ～るが大好き。特別な場所でした出会えないレア。",
+        description: "『ベジュ』と『ちびた』は〇ゅ～るが大好き。特別な場所でしか出会えないレア。",
         spawn_time: "all"
+    },
+    "drink": {
+        id: "drink",
+        name: "自販機猫",
+        image: "./drink.png",
+        description: "観光に来た不慣れな猫。店は夕方には閉まってしまうので、夜は自販機しかないのだ。",
+        spawn_time: "night"
     },
     "tibita": {
         id: "tibita",
