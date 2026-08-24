@@ -32,10 +32,8 @@
         #zukan-modal { display: none; }
         #zukan-modal.show { display: flex; }
 
-        /* 【修正】UIは暗くせず、マップ（地図レイヤー）だけをカーナビ風の夜モード・夕方モードに変更する */
         .leaflet-tile-pane { transition: filter 2s; }
         body.is-sunset .leaflet-tile-pane { filter: sepia(0.4) hue-rotate(-15deg) saturate(1.5) brightness(0.9); }
-        /* invertで白黒反転させ、hue-rotateで水色をキープ。これで完全なダークモード地図になります */
         body.is-night .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(100%) contrast(90%); }
         
         .rain-layer { position: absolute; inset: 0; pointer-events: none; z-index: 900; background-image: linear-gradient(160deg, transparent 0%, transparent 95%, rgba(255,255,255,0.7) 100%); background-size: 15px 80px; animation: rainFall 0.4s linear infinite; display: none; }
@@ -119,7 +117,6 @@
         <video id="ar-video" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline></video>
         <img id="ar-cat-img" src="" class="absolute hidden w-40 h-40 object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.6)]" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
         
-        <!-- 【修正】mb-10 を追加して全体を上に持ち上げ、ホームボタンとの被りを防止 -->
         <div id="ar-ui-layer" class="absolute inset-0 flex flex-col justify-between p-4 pb-12 pointer-events-none">
             <button id="close-ar-btn" class="self-end bg-red-500 text-white px-4 py-2 rounded-full font-bold pointer-events-auto border-2 border-white shadow-lg mt-2">✖ 閉じる</button>
             <div class="flex flex-col gap-3 pointer-events-auto items-center mb-8">
@@ -130,13 +127,12 @@
         </div>
     </div>
 
-    <!-- 【修正】保存ボタンを追加した結果画面 -->
+    <!-- 撮影結果画面 -->
     <div id="ar-result-modal" class="fixed inset-0 bg-black/95 z-[9000] hidden flex-col items-center justify-center p-4 interactive">
         <p class="text-white font-bold mb-4">きれいに撮れたニャ！</p>
         <img id="ar-result-img" src="" class="w-full max-w-sm rounded-lg shadow-2xl mb-8 border-4 border-white object-contain max-h-[60dvh]">
         <div class="flex gap-4">
             <button id="close-ar-result-btn" class="bg-gray-500 text-white px-6 py-3 rounded-full font-bold text-lg">とじる</button>
-            <!-- 1タップでダウンロードするボタン -->
             <button id="download-ar-result-btn" class="bg-blue-500 text-white px-6 py-3 rounded-full font-bold text-lg flex items-center gap-2">💾 保存する</button>
         </div>
     </div>
@@ -155,8 +151,7 @@
 
         const STAY_SPOTS = [
             { id: "mamena", name: "まめな食堂", lat: 34.1795, lng: 132.8365, radius: 30, timeReq: 15 * 60, catId: "stay_mamena" },
-            { id: "okiyuu", name: "沖友天満宮", lat: 34.1750, lng: 132.8600, radius: 30, timeReq: 3 * 60, catId: "stay_okiyuu" },
-            // { id: "debug_spot", name: "テストスポット", lat: 35.68, lng: 139.76, radius: 1000000, timeReq: 10, catId: "stay_test" }
+            { id: "okiyuu", name: "沖友天満宮", lat: 34.1750, lng: 132.8600, radius: 30, timeReq: 3 * 60, catId: "stay_okiyuu" }
         ];
 
         let currentIslandKey = null, isCatSpawned = false, foodCount = 3;
@@ -311,7 +306,7 @@
         });
         document.getElementById('close-qr-btn').addEventListener('click', () => { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); }); });
 
-        // ARモードとシャッター機能
+        // ARモードと高画質シャッター機能
         const arModal = document.getElementById('ar-modal'), arVideo = document.getElementById('ar-video'), arCatImg = document.getElementById('ar-cat-img'), arCatSelector = document.getElementById('ar-cat-selector'), arUiLayer = document.getElementById('ar-ui-layer');
         let arStream = null;
 
@@ -324,7 +319,11 @@
                 }
             });
             if (arCatSelector.innerHTML === '') arCatSelector.innerHTML = '<p class="text-white text-sm p-2">まずは島を歩いてねこを見つけてニャ！</p>';
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(stream => { arStream = stream; arVideo.srcObject = stream; }).catch(err => { showCustomAlert('エラー', 'カメラの使用が許可されていません。'); });
+            
+            // 【変更】カメラに高解像度（HD画質）の映像を要求する
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1920 } } })
+            .then(stream => { arStream = stream; arVideo.srcObject = stream; })
+            .catch(err => { showCustomAlert('エラー', 'カメラの使用が許可されていません。'); });
         });
 
         document.getElementById('close-ar-btn').addEventListener('click', () => { if(arStream) arStream.getTracks().forEach(t => t.stop()); arModal.classList.add('hidden'); arModal.classList.remove('flex'); });
@@ -334,19 +333,37 @@
         arCatImg.addEventListener('touchmove', (e) => { if(!isDragging) return; e.preventDefault(); arCatImg.style.left = `${initialLeft + (e.touches[0].clientX - startX)}px`; arCatImg.style.top = `${initialTop + (e.touches[0].clientY - startY)}px`; });
         arCatImg.addEventListener('touchend', () => { isDragging = false; });
 
-        // 写真撮影と自動保存
+        // 【修正】スマホの実際の画素数（DPR）に合わせて高解像度で合成・保存する
         document.getElementById('ar-shutter-btn').addEventListener('click', () => {
             const flash = document.createElement('div'); flash.className = "fixed inset-0 bg-white z-[9999] transition-opacity duration-300 pointer-events-none"; document.body.appendChild(flash);
             setTimeout(() => flash.classList.add('opacity-0'), 50); setTimeout(() => flash.remove(), 350);
 
-            const canvas = document.createElement('canvas'); canvas.width = window.innerWidth; canvas.height = window.innerHeight; const ctx = canvas.getContext('2d');
-            const videoRatio = arVideo.videoWidth / arVideo.videoHeight, screenRatio = canvas.width / canvas.height;
-            let drawW = canvas.width, drawH = canvas.height, offsetX = 0, offsetY = 0;
-            if (videoRatio > screenRatio) { drawW = canvas.height * videoRatio; offsetX = (canvas.width - drawW) / 2; } else { drawH = canvas.width / videoRatio; offsetY = (canvas.height - drawH) / 2; }
+            // スマホの実際のピクセル密度（iPhone等なら2〜3倍）を取得
+            const dpr = window.devicePixelRatio || 2;
+            const canvas = document.createElement('canvas'); 
             
-            ctx.drawImage(arVideo, offsetX, offsetY, drawW, drawH);
-            if (!arCatImg.classList.contains('hidden')) { const catRect = arCatImg.getBoundingClientRect(); ctx.drawImage(arCatImg, catRect.left, catRect.top, catRect.width, catRect.height); }
+            // キャンバスを高精細化
+            canvas.width = window.innerWidth * dpr; 
+            canvas.height = window.innerHeight * dpr; 
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr); // 描画内容を全てdpr倍にスケールアップ
 
+            const videoRatio = arVideo.videoWidth / arVideo.videoHeight;
+            const screenRatio = window.innerWidth / window.innerHeight;
+            let drawW = window.innerWidth, drawH = window.innerHeight, offsetX = 0, offsetY = 0;
+            if (videoRatio > screenRatio) { drawW = window.innerHeight * videoRatio; offsetX = (window.innerWidth - drawW) / 2; } 
+            else { drawH = window.innerWidth / videoRatio; offsetY = (window.innerHeight - drawH) / 2; }
+            
+            // カメラ映像を描画
+            ctx.drawImage(arVideo, offsetX, offsetY, drawW, drawH);
+            
+            // 猫の画像を高解像度で上書き描画
+            if (!arCatImg.classList.contains('hidden')) { 
+                const catRect = arCatImg.getBoundingClientRect(); 
+                ctx.drawImage(arCatImg, catRect.left, catRect.top, catRect.width, catRect.height); 
+            }
+
+            // 高精細な画像を生成
             const dataUrl = canvas.toDataURL('image/png');
             document.getElementById('ar-result-img').src = dataUrl;
             document.getElementById('ar-result-modal').classList.remove('hidden'); document.getElementById('ar-result-modal').classList.add('flex');
@@ -354,13 +371,12 @@
 
         document.getElementById('close-ar-result-btn').addEventListener('click', () => { document.getElementById('ar-result-modal').classList.add('hidden'); document.getElementById('ar-result-modal').classList.remove('flex'); });
 
-        // 【追加】1タップでスマホに保存する機能
         document.getElementById('download-ar-result-btn').addEventListener('click', () => {
             const dataUrl = document.getElementById('ar-result-img').src;
             const link = document.createElement('a');
-            link.download = `shimaneko_${Date.now()}.png`; // 自動でファイル名をつける
+            link.download = `tobishima_${Date.now()}.png`; 
             link.href = dataUrl;
-            link.click(); // 自動でダウンロードを実行
+            link.click(); 
         });
     </script>
 </body>
