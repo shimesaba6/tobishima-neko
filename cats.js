@@ -14,7 +14,7 @@ const CAT_DATA = {
         id: "haruneko", 
         name: "料理猫", 
         image: "./haruneko.png", 
-        description: "まめな食堂の料理人。栗が好き。",
+        description: "食堂の料理人。栗が好き。",
         spawn_time: "all"
     },
     "kanineko": {
@@ -23,6 +23,13 @@ const CAT_DATA = {
         image: "./kanineko.png",
         description: "夜な夜なカニを探す猫。横歩きが得意。",
         spawn_time: "night"
+    },
+    "lemon": {
+        id: "lemon",
+        name: "レモネード猫",
+        image: "./lemon.png",
+        description: "島を盛り上げようと頑張る猫。客人にはまずレモネードでおもてなしをする。",
+        spawn_time: "all"
     },
     "turi_neko": {
         id: "turi_neko",
@@ -42,7 +49,7 @@ const CAT_DATA = {
         id: "umioyaji",
         name: "海おじ猫",
         image: "./umioyaji.png",
-        description: "派手なアロハシャツを好むガッチリ体型オジサン。時々遊びに来ては海に出る。多分釣りが好き。",
+        description: "派手なアロハシャツを好むオジサン。時々遊びに来ては海に出る。多分釣りが好き。",
         spawn_time: "all"
     },
     "drink": {
