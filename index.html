@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- 【追加】QRコードを読み取るためのライブラリ -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         body { font-family: 'Hiragino Maru Gothic ProN', 'Rounded M+ 1c', sans-serif; background-color: #fdf6e3; color: #5c4b51; margin: 0; padding: 0; overflow: hidden; }
@@ -73,7 +72,6 @@
             </button>
         </div>
 
-        <!-- 【追加】ボタンエリアのレイアウトを少し調整して、QR読み取りボタンを配置 -->
         <div class="ui-layer bottom-0 left-0 w-full p-4 pb-8 flex justify-between items-end gap-1">
             <button id="go-garden-btn" class="bg-green-500 hover:bg-green-600 text-white w-14 h-14 shrink-0 rounded-full flex items-center justify-center text-2xl shadow-lg transition-transform hover:scale-105 interactive border-4 border-white">
                 🏡
@@ -93,7 +91,6 @@
                 </div>
             </div>
 
-            <!-- 【追加】QR読み取りボタン -->
             <button id="open-qr-btn" class="bg-yellow-400 hover:bg-yellow-500 text-white w-14 h-14 shrink-0 rounded-full flex items-center justify-center text-2xl shadow-lg transition-transform hover:scale-105 interactive border-4 border-white">
                 📷
             </button>
@@ -124,6 +121,8 @@
             <div class="grid grid-cols-3 gap-3 overflow-y-auto p-1 flex-1" id="zukan-list"></div>
             <div class="mt-6 text-center shrink-0">
                 <button id="close-zukan" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-10 py-4 rounded-full font-bold text-lg transition-colors shadow-sm">とじる</button>
+                <!-- 【追加】リセットボタン（目立たないように配置） -->
+                <p id="open-reset-btn" class="text-center text-[11px] text-gray-400 font-bold mt-4 underline cursor-pointer p-2">データを初期化する</p>
             </div>
         </div>
     </div>
@@ -135,14 +134,49 @@
         <img id="enlarged-image" src="" class="w-[90%] max-w-[300px] object-contain filter drop-shadow-[0_10px_15px_rgba(255,255,255,0.3)]">
     </div>
 
-    <!-- 【追加】QR読み取り用のカメラモーダル -->
     <div id="qr-modal" class="fixed inset-0 bg-black/90 z-[6000] hidden flex-col items-center justify-center p-4 interactive">
         <h2 class="text-white text-xl font-bold mb-4">シークレットQRを探せ！</h2>
-        <!-- カメラ映像がここに表示されます -->
         <div id="qr-reader" class="w-full max-w-sm bg-white rounded-xl overflow-hidden mb-6"></div>
         <button id="close-qr-btn" class="bg-red-500 hover:bg-red-600 text-white px-8 py-3 rounded-full font-bold text-lg shadow-lg border-2 border-white">
             やめる
         </button>
+    </div>
+
+    <!-- 【追加】自作のカスタムアラート画面（URLが出ない！） -->
+    <div id="custom-alert-modal" class="fixed inset-0 bg-black/60 z-[7000] hidden flex-col items-center justify-center p-4 backdrop-blur-sm interactive">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-center border-4 border-orange-200">
+            <h3 id="custom-alert-title" class="text-2xl font-black text-gray-800 mb-3"></h3>
+            <p id="custom-alert-message" class="text-base text-gray-600 font-bold mb-6 leading-relaxed"></p>
+            <button id="custom-alert-close" class="bg-orange-500 hover:bg-orange-600 text-white px-10 py-3 rounded-full font-bold text-lg shadow-md transition-transform hover:scale-105">
+                OK
+            </button>
+        </div>
+    </div>
+
+    <!-- 【追加】誤操作防止機能付きのデータリセット確認画面 -->
+    <div id="reset-confirm-modal" class="fixed inset-0 bg-black/80 z-[7000] hidden flex-col items-center justify-center p-4 backdrop-blur-md interactive">
+        <div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-center border-4 border-red-300">
+            <h3 class="text-2xl font-black text-red-600 mb-4">⚠️ データ初期化</h3>
+            <p class="text-sm text-gray-700 font-bold mb-6 text-left leading-relaxed">
+                これまで見つけた「ねこ図鑑」の記録と「エサ」の数がすべて消去され、最初からになります。<br><br>
+                この操作は元に戻せません。本当に初期化してもよろしいですか？
+            </p>
+            
+            <!-- チェックを入れないとボタンが押せないセーフティ機構 -->
+            <label class="flex items-center justify-center gap-2 mb-6 bg-white border border-gray-200 p-4 rounded-xl cursor-pointer shadow-sm">
+                <input type="checkbox" id="reset-checkbox" class="w-6 h-6 rounded accent-red-500">
+                <span class="text-base font-bold text-gray-800">はい、初期化します</span>
+            </label>
+            
+            <div class="flex gap-3 justify-center w-full">
+                <button id="cancel-reset-btn" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 py-3 rounded-full font-bold text-base shadow-sm transition-colors">
+                    やめる
+                </button>
+                <button id="execute-reset-btn" class="flex-1 bg-gray-400 text-white py-3 rounded-full font-bold text-base shadow-sm pointer-events-none transition-colors" disabled>
+                    消去する
+                </button>
+            </div>
+        </div>
     </div>
 
     <script src="./cats.js"></script>
@@ -169,6 +203,87 @@
         let isTracking = true;
 
         const catVoice = new Audio('./catvoice.mp3');
+
+        // ==========================================
+        // カスタムアラートの制御（alert() の代わりに使用）
+        // ==========================================
+        const customAlertModal = document.getElementById('custom-alert-modal');
+        const customAlertTitle = document.getElementById('custom-alert-title');
+        const customAlertMessage = document.getElementById('custom-alert-message');
+        const customAlertClose = document.getElementById('custom-alert-close');
+
+        function showCustomAlert(title, message) {
+            customAlertTitle.innerHTML = title;
+            customAlertMessage.innerHTML = message;
+            customAlertModal.classList.remove('hidden');
+            customAlertModal.classList.add('flex');
+        }
+
+        customAlertClose.addEventListener('click', () => {
+            customAlertModal.classList.add('hidden');
+            customAlertModal.classList.remove('flex');
+        });
+
+        // ==========================================
+        // リセット機能の制御
+        // ==========================================
+        const openResetBtn = document.getElementById('open-reset-btn');
+        const resetConfirmModal = document.getElementById('reset-confirm-modal');
+        const cancelResetBtn = document.getElementById('cancel-reset-btn');
+        const executeResetBtn = document.getElementById('execute-reset-btn');
+        const resetCheckbox = document.getElementById('reset-checkbox');
+
+        // リセットボタンを押した時の初期設定（チェックを外し、ボタンを無効化しておく）
+        openResetBtn.addEventListener('click', () => {
+            resetCheckbox.checked = false;
+            executeResetBtn.disabled = true;
+            executeResetBtn.classList.replace('bg-red-500', 'bg-gray-400');
+            executeResetBtn.classList.replace('hover:bg-red-600', 'bg-gray-400');
+            executeResetBtn.classList.add('pointer-events-none');
+            
+            resetConfirmModal.classList.remove('hidden');
+            resetConfirmModal.classList.add('flex');
+        });
+
+        cancelResetBtn.addEventListener('click', () => {
+            resetConfirmModal.classList.add('hidden');
+            resetConfirmModal.classList.remove('flex');
+        });
+
+        // チェックボックスが押されたら、削除ボタンを赤くして押せるようにする
+        resetCheckbox.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                executeResetBtn.disabled = false;
+                executeResetBtn.classList.replace('bg-gray-400', 'bg-red-500');
+                executeResetBtn.classList.remove('pointer-events-none');
+                executeResetBtn.classList.add('hover:bg-red-600');
+            } else {
+                executeResetBtn.disabled = true;
+                executeResetBtn.classList.replace('bg-red-500', 'bg-gray-400');
+                executeResetBtn.classList.replace('hover:bg-red-600', 'bg-gray-400');
+                executeResetBtn.classList.add('pointer-events-none');
+            }
+        });
+
+        // 実際に消去を実行
+        executeResetBtn.addEventListener('click', () => {
+            localStorage.removeItem('tobishima_zukan');
+            zukanData = [];
+            foodCount = 3;
+            distanceWalked = 0;
+            
+            // 画面の表示を初期状態に戻す
+            document.getElementById('food-count').innerHTML = `${foodCount} <span class="text-xs font-normal text-gray-600">個</span>`;
+            document.getElementById('distance-progress').innerText = `あと ${DISTANCE_TO_FOOD}m`;
+            document.getElementById('distance-bar').style.width = `0%`;
+            
+            resetConfirmModal.classList.add('hidden');
+            resetConfirmModal.classList.remove('flex');
+            document.getElementById('zukan-modal').classList.remove('show');
+            
+            showCustomAlert('データ初期化完了', '図鑑とエサのデータをリセットしました。<br>また新しいねこを探してみてニャ！');
+        });
+
 
         const map = L.map('map', { zoomControl: false }).setView([35.681236, 139.767125], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
@@ -530,9 +645,6 @@
 
         closeZukanBtn.addEventListener('click', () => { zukanModal.classList.remove('show'); });
 
-        // ==========================================
-        // 【追加】QRコード読み取り機能
-        // ==========================================
         const openQrBtn = document.getElementById('open-qr-btn');
         const closeQrBtn = document.getElementById('close-qr-btn');
         const qrModal = document.getElementById('qr-modal');
@@ -542,39 +654,30 @@
             qrModal.classList.remove('hidden');
             qrModal.classList.add('flex');
             
-            // カメラを起動
             html5QrCode = new Html5Qrcode("qr-reader");
-            // 背面カメラを使う設定
             html5QrCode.start({ facingMode: "environment" }, {
                 fps: 10,
                 qrbox: { width: 250, height: 250 }
             },
             (decodedText, decodedResult) => {
-                // ▼ 読み取り成功時の処理 ▼
-                // もし読み取った文字（decodedText）が CAT_DATA に存在したら
                 if(CAT_DATA[decodedText]) {
-                    // カメラを止める
                     html5QrCode.stop().then(() => {
                         qrModal.classList.add('hidden');
                         qrModal.classList.remove('flex');
                         
-                        // 図鑑に追加して、お祝いのポップアップと音を出す
                         addToZukan(decodedText);
                         catVoice.currentTime = 0;
                         catVoice.play().catch(e => {});
-                        alert(`🎉 シークレット発見！\n「${CAT_DATA[decodedText].name}」をゲットしたニャ！`);
+                        // 【修正】自作のアラートに変更
+                        showCustomAlert('🎉 シークレット発見！', `「${CAT_DATA[decodedText].name}」をゲットしたニャ！`);
                     });
-                } else {
-                    // 関係ないQRコードを読んだ場合（連続してアラートが出ないようにコンソールに出力）
-                    console.log("このQRコードにはねこは隠れていないようだ…");
                 }
             },
-            (errorMessage) => {
-                // 読み取り中（ここは常にエラーが出続けるので無視）
-            })
+            (errorMessage) => {})
             .catch((err) => {
                 console.log(err);
-                alert("カメラの起動に失敗しました。スマホの設定でカメラの使用を許可してください。");
+                // 【修正】エラー時も自作のアラートに変更
+                showCustomAlert('エラー', 'カメラの起動に失敗しました。<br>スマホの設定でカメラの使用を許可してください。');
                 qrModal.classList.add('hidden');
                 qrModal.classList.remove('flex');
             });
@@ -582,7 +685,6 @@
 
         closeQrBtn.addEventListener('click', () => {
             if (html5QrCode) {
-                // カメラを安全に止めてからモーダルを閉じる
                 html5QrCode.stop().then(() => {
                     qrModal.classList.add('hidden');
                     qrModal.classList.remove('flex');
