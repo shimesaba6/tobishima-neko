@@ -119,19 +119,19 @@ const CAT_DATA = {
     // -------------------------
     // 天気・時間限定の猫
     // -------------------------
-    "amagappa": {
-        id: "amagappa",
-        name: "雨がっぱ猫",
-        image: "./haruneko.png", 
-        description: "雨の日だけひょっこり現れる。水たまりが好き。",
+    "kasa": {
+        id: "kasa",
+        name: "傘猫",
+        image: "./kasa.png", 
+        description: "雨の日だけ現れる。橙色の傘を愛用。よく風で飛ばされては島の住民に保護されている。",
         spawn_time: "all",
         spawn_weather: "rain" 
     },
-    "sunset_cat": {
-        id: "sunset_cat",
+    "tasogare": {
+        id: "tasogare",
         name: "たそがれ猫",
-        image: "./yumi.png", 
-        description: "夕暮れ時の海辺を散歩するのが日課。哀愁が漂う。",
+        image: "./tasogare.png", 
+        description: "夕暮れ時の海辺を散歩するのが日課。いつも哀愁が漂う。",
         spawn_time: "sunset" 
     }
 };
