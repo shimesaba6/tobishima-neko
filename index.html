@@ -143,6 +143,8 @@
         const DEBUG_MODE = false; 
         const DUMMY_LAT = 34.1795;
         const DUMMY_LNG = 132.8365;
+        const DESPAWN_DISTANCE = 300; 
+        let catDespawnTimer = null; 
 
         const ISLANDS = {
             "osaki_shimojima": { name: "大崎下島", bounds: { minLat: 34.160, maxLat: 34.200, minLng: 132.800, maxLng: 132.870 } },
@@ -162,7 +164,6 @@
         const DISTANCE_TO_FOOD = 50; 
         const catVoice = new Audio('./catvoice.mp3');
 
-        // アラート・リセット
         const customAlertModal = document.getElementById('custom-alert-modal'), customAlertTitle = document.getElementById('custom-alert-title'), customAlertMessage = document.getElementById('custom-alert-message');
         function showCustomAlert(title, message) { customAlertTitle.innerHTML = title; customAlertMessage.innerHTML = message; customAlertModal.classList.remove('hidden'); customAlertModal.classList.add('flex'); }
         document.getElementById('custom-alert-close').addEventListener('click', () => { customAlertModal.classList.add('hidden'); customAlertModal.classList.remove('flex'); });
@@ -176,6 +177,7 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
         const BASE_ICON_SIZE = 80;
         let playerMarker = null, activeCatMarker = null, activeCatIconOptions = null, moveInterval = null;
+        let catCurrentLatLng = null; 
         const recenterContainer = document.getElementById('recenter-container');
 
         map.on('dragstart', () => { if (isTracking) { isTracking = false; recenterContainer.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4'); recenterContainer.classList.add('opacity-100', 'pointer-events-auto', 'translate-y-0'); } });
@@ -185,7 +187,23 @@
         function getDistance(lat1, lon1, lat2, lon2) { const R = 6371e3; const p1 = lat1 * Math.PI/180; const p2 = lat2 * Math.PI/180; const dp = (lat2-lat1) * Math.PI/180; const dl = (lon2-lon1) * Math.PI/180; const a = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
         function addToZukan(catId) { if (!zukanData.includes(catId)) { zukanData.push(catId); localStorage.setItem('tobishima_zukan', JSON.stringify(zukanData)); } }
         
+        function despawnCat() {
+            if (!isCatSpawned || !activeCatMarker) return;
+            const img = document.getElementById('cat-image');
+            if (img) img.classList.add('fade-out');
+            setTimeout(() => {
+                if (activeCatMarker) { map.removeLayer(activeCatMarker); activeCatMarker = null; }
+                if (moveInterval) clearInterval(moveInterval);
+                if (catDespawnTimer) clearTimeout(catDespawnTimer);
+                isCatSpawned = false; catCurrentLatLng = null;
+            }, 500);
+        }
+
         function spawnSpecificCat(catId, playerLatLng) { if (!CAT_DATA[catId] || isCatSpawned) return; executeSpawn(CAT_DATA[catId], playerLatLng); }
+        
+        // ==========================================
+        // 【アップデート】ガチャ方式の抽選システム
+        // ==========================================
         function spawnRandomCat(playerLatLng) {
             if (isCatSpawned) return;
             const availableCats = [];
@@ -196,22 +214,52 @@
                 if (timeMatch && weatherMatch) availableCats.push(cat);
             }
             if (availableCats.length === 0) return;
-            executeSpawn(availableCats[Math.floor(Math.random() * availableCats.length)], playerLatLng);
+
+            // 1. 各猫の「重み」を合計する
+            let totalWeight = 0;
+            availableCats.forEach(cat => {
+                // spawn_rateが設定されていればその値、なければ標準の「10」とする
+                totalWeight += (cat.spawn_rate !== undefined ? cat.spawn_rate : 10);
+            });
+
+            // 2. 0 〜 合計重み の間でランダムな数字を引く
+            let randomNum = Math.random() * totalWeight;
+            let selectedCat = availableCats[0];
+
+            // 3. ルーレットを回す
+            for (let i = 0; i < availableCats.length; i++) {
+                const weight = availableCats[i].spawn_rate !== undefined ? availableCats[i].spawn_rate : 10;
+                randomNum -= weight;
+                if (randomNum <= 0) {
+                    selectedCat = availableCats[i];
+                    break;
+                }
+            }
+
+            executeSpawn(selectedCat, playerLatLng);
         }
 
         function executeSpawn(selectedCat, playerLatLng) {
             isCatSpawned = true; catVoice.currentTime = 0; catVoice.play().catch(e => {}); if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+            
+            const fleeTime = selectedCat.flee_time ? selectedCat.flee_time * 1000 : 5 * 60 * 1000;
+            if (catDespawnTimer) clearTimeout(catDespawnTimer);
+            catDespawnTimer = setTimeout(() => { despawnCat(); }, fleeTime);
+
             activeCatIconOptions = { html: `<img src="${selectedCat.image}" id="cat-image" class="cat-wrapper" style="width: ${BASE_ICON_SIZE}px; height: ${BASE_ICON_SIZE}px;">` };
             const catIcon = L.divIcon({ html: activeCatIconOptions.html, className: '', iconSize: [BASE_ICON_SIZE, BASE_ICON_SIZE], iconAnchor: [BASE_ICON_SIZE/2, BASE_ICON_SIZE], popupAnchor: [0, -BASE_ICON_SIZE] });
-            let catCurrentLatLng = L.latLng(playerLatLng.lat + (Math.random()*0.001 - 0.0005), playerLatLng.lng + (Math.random()*0.001 - 0.0005));
+            catCurrentLatLng = L.latLng(playerLatLng.lat + (Math.random()*0.001 - 0.0005), playerLatLng.lng + (Math.random()*0.001 - 0.0005));
             activeCatMarker = L.marker(catCurrentLatLng, { icon: catIcon }).addTo(map);
+            
             activeCatMarker.on('click', () => {
                 if(foodCount > 0) {
+                    if (catDespawnTimer) clearTimeout(catDespawnTimer); 
                     foodCount--; document.getElementById('food-count').innerHTML = `${foodCount}`; addToZukan(selectedCat.id);
                     activeCatMarker.bindPopup(`<b style="font-size: 16px;">「ありがとうニャ！」<br><span style="color: #ea580c; font-size: 12px; margin-top: 4px;">お庭に遊びにくるニャ！</span></b>`, { className: 'custom-popup' }).openPopup();
-                    setTimeout(() => { document.getElementById('cat-image').classList.add('fade-out'); setTimeout(() => { map.removeLayer(activeCatMarker); clearInterval(moveInterval); isCatSpawned = false; }, 500); }, 3000);
+                    setTimeout(() => { despawnCat(); }, 3000); 
                 } else { activeCatMarker.bindPopup('<b style="font-size: 16px;">「エサがないニャ...」</b>', { className: 'custom-popup' }).openPopup(); }
             });
+
             let target = L.latLng(catCurrentLatLng.lat + (Math.random()-0.5)*0.0001, catCurrentLatLng.lng + (Math.random()-0.5)*0.0001);
             moveInterval = setInterval(() => {
                 const spd = 0.02; catCurrentLatLng = L.latLng(catCurrentLatLng.lat + (target.lat - catCurrentLatLng.lat)*spd, catCurrentLatLng.lng + (target.lng - catCurrentLatLng.lng)*spd); activeCatMarker.setLatLng(catCurrentLatLng);
@@ -256,6 +304,12 @@
         function updateLocation(lat, lng) {
             const playerLatLng = L.latLng(lat, lng); document.getElementById('loading').style.display = 'none';
             if (!playerMarker) { playerMarker = L.marker(playerLatLng).addTo(map); map.setView(playerLatLng, 17); } else { playerMarker.setLatLng(playerLatLng); if (isTracking) map.panTo(playerLatLng); }
+            
+            if (isCatSpawned && activeCatMarker && catCurrentLatLng) {
+                const distToCat = getDistance(lat, lng, catCurrentLatLng.lat, catCurrentLatLng.lng);
+                if (distToCat > DESPAWN_DISTANCE) despawnCat();
+            }
+
             if (lastLatLng && !DEBUG_MODE) {
                 const dist = getDistance(lastLatLng.lat, lastLatLng.lng, lat, lng);
                 if (dist > 1 && dist < 50) { distanceWalked += dist; if (distanceWalked >= DISTANCE_TO_FOOD) { foodCount++; distanceWalked = 0; document.getElementById('food-count').innerHTML = `${foodCount}`; } document.getElementById('distance-progress').innerText = `あと ${Math.ceil(Math.max(0, DISTANCE_TO_FOOD - distanceWalked))}m`; document.getElementById('distance-bar').style.width = `${(distanceWalked / DISTANCE_TO_FOOD) * 100}%`; }
@@ -306,7 +360,6 @@
         });
         document.getElementById('close-qr-btn').addEventListener('click', () => { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); }); });
 
-        // ARモードと高画質シャッター機能
         const arModal = document.getElementById('ar-modal'), arVideo = document.getElementById('ar-video'), arCatImg = document.getElementById('ar-cat-img'), arCatSelector = document.getElementById('ar-cat-selector'), arUiLayer = document.getElementById('ar-ui-layer');
         let arStream = null;
 
@@ -320,7 +373,6 @@
             });
             if (arCatSelector.innerHTML === '') arCatSelector.innerHTML = '<p class="text-white text-sm p-2">まずは島を歩いてねこを見つけてニャ！</p>';
             
-            // 【変更】カメラに高解像度（HD画質）の映像を要求する
             navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1920 } } })
             .then(stream => { arStream = stream; arVideo.srcObject = stream; })
             .catch(err => { showCustomAlert('エラー', 'カメラの使用が許可されていません。'); });
@@ -333,20 +385,16 @@
         arCatImg.addEventListener('touchmove', (e) => { if(!isDragging) return; e.preventDefault(); arCatImg.style.left = `${initialLeft + (e.touches[0].clientX - startX)}px`; arCatImg.style.top = `${initialTop + (e.touches[0].clientY - startY)}px`; });
         arCatImg.addEventListener('touchend', () => { isDragging = false; });
 
-        // 【修正】スマホの実際の画素数（DPR）に合わせて高解像度で合成・保存する
         document.getElementById('ar-shutter-btn').addEventListener('click', () => {
             const flash = document.createElement('div'); flash.className = "fixed inset-0 bg-white z-[9999] transition-opacity duration-300 pointer-events-none"; document.body.appendChild(flash);
             setTimeout(() => flash.classList.add('opacity-0'), 50); setTimeout(() => flash.remove(), 350);
 
-            // スマホの実際のピクセル密度（iPhone等なら2〜3倍）を取得
             const dpr = window.devicePixelRatio || 2;
             const canvas = document.createElement('canvas'); 
-            
-            // キャンバスを高精細化
             canvas.width = window.innerWidth * dpr; 
             canvas.height = window.innerHeight * dpr; 
             const ctx = canvas.getContext('2d');
-            ctx.scale(dpr, dpr); // 描画内容を全てdpr倍にスケールアップ
+            ctx.scale(dpr, dpr); 
 
             const videoRatio = arVideo.videoWidth / arVideo.videoHeight;
             const screenRatio = window.innerWidth / window.innerHeight;
@@ -354,16 +402,13 @@
             if (videoRatio > screenRatio) { drawW = window.innerHeight * videoRatio; offsetX = (window.innerWidth - drawW) / 2; } 
             else { drawH = window.innerWidth / videoRatio; offsetY = (window.innerHeight - drawH) / 2; }
             
-            // カメラ映像を描画
             ctx.drawImage(arVideo, offsetX, offsetY, drawW, drawH);
             
-            // 猫の画像を高解像度で上書き描画
             if (!arCatImg.classList.contains('hidden')) { 
                 const catRect = arCatImg.getBoundingClientRect(); 
                 ctx.drawImage(arCatImg, catRect.left, catRect.top, catRect.width, catRect.height); 
             }
 
-            // 高精細な画像を生成
             const dataUrl = canvas.toDataURL('image/png');
             document.getElementById('ar-result-img').src = dataUrl;
             document.getElementById('ar-result-modal').classList.remove('hidden'); document.getElementById('ar-result-modal').classList.add('flex');

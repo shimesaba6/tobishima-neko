@@ -21,14 +21,14 @@ const CAT_DATA = {
         id: "kanineko",
         name: "カニ猫",
         image: "./kanineko.png",
-        description: "夜な夜なカニを探す猫。横歩きが得意。",
+        description: "夜な夜な海辺でカニを探す猫。横歩きが得意。",
         spawn_time: "night"
     },
     "lemon": {
         id: "lemon",
         name: "レモネード猫",
         image: "./lemon.png",
-        description: "島を盛り上げようと頑張る猫。客人にはまずレモネードでおもてなしをする。",
+        description: "おしゃべりが好きな猫。客人にはまずレモネードでおもてなしをする。",
         spawn_time: "all"
     },
     "turi_neko": {
@@ -49,14 +49,14 @@ const CAT_DATA = {
         id: "umioyaji",
         name: "海おじ猫",
         image: "./umioyaji.png",
-        description: "派手なアロハシャツを好むオジサン。時々遊びに来ては海に出る。多分釣りが好き。",
+        description: "派手なアロハシャツを好むオジサン。時々島に遊びに来ては海に出る。多分釣りが好き。",
         spawn_time: "all"
     },
     "drink": {
         id: "drink",
         name: "自販機猫",
         image: "./drink.png",
-        description: "観光に来た不慣れな猫。店は夕方には閉まってしまうので、夜は自販機しかないのだ。",
+        description: "観光に来た不慣れな猫。島の店は早めに閉まってしまうので、夜は自販機しかないのだ。",
         spawn_time: "night"
     },
     "tibita": {
@@ -65,6 +65,8 @@ const CAT_DATA = {
         image: "./tibita.png",
         description: "まめな食堂の匂いにつられてきた猫。相棒の猫がいる。",
         spawn_time: "all"
+        flee_time: 15  // 【追加】10秒で消滅
+        spawn_rate: 1
     },
     "over_neko": {
         id: "over_neko",
