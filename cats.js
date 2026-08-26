@@ -64,8 +64,8 @@ const CAT_DATA = {
         name: "ちびた",
         image: "./tibita.png",
         description: "まめな食堂の匂いにつられてきた猫。相棒の猫がいる。",
-        spawn_time: "all"
-        flee_time: 15  // 【追加】10秒で消滅
+        spawn_time: "all",
+        flee_time: 15,
         spawn_rate: 1
     },
     "over_neko": {
@@ -85,7 +85,7 @@ const CAT_DATA = {
         image: "./qoyatu.png",
         description: "『ベジュ』と『ちびた』は〇ゅ～るが大好き。特別な場所でしか出会えないレア。",
         spawn_time: "all",
-        is_special: true // 【重要】これでランダム出現しなくなります
+        is_special: true 
     },
 
     // -------------------------
@@ -94,44 +94,44 @@ const CAT_DATA = {
     "stay_mamena": {
         id: "stay_mamena",
         name: "まめな常連猫",
-        image: "./haruneko.png", // ※専用の画像を描いたらファイル名を変更してください
+        image: "./haruneko.png", 
         description: "まめな食堂でのんびり過ごした人だけが出会える猫。お腹いっぱい。",
         spawn_time: "all",
         is_special: true
     },
-    "stay_okiyuu": {
-        id: "stay_okiyuu",
-        name: "天満宮の守り猫",
-        image: "./tibita.png", // ※専用の画像を描いたらファイル名を変更してください
-        description: "沖友天満宮でお参りした人にだけ姿を見せる、ありがたい猫。",
+    "stay_okitomo": {
+        id: "stay_okitomo",
+        name: "お祭り猫",
+        image: "./maturi.png", 
+        description: "沖友天満宮の例祭に向けて練習をしている猫。正直大きな音は苦手なのだ。",
         spawn_time: "all",
         is_special: true
     },
     "stay_test": {
         id: "stay_test",
         name: "テスト休憩猫",
-        image: "./over.png", // ※デバッグ用
+        image: "./over.png", 
         description: "テストスポットで10秒休憩すると現れるデバッグ用ねこ。",
         spawn_time: "all",
         is_special: true
     },
 
     // -------------------------
-    // 【サンプル】天気・時間限定の猫
+    // 天気・時間限定の猫
     // -------------------------
     "amagappa": {
         id: "amagappa",
         name: "雨がっぱ猫",
-        image: "./haruneko.png", // ※専用の画像を描いたらファイル名を変更してください
+        image: "./haruneko.png", 
         description: "雨の日だけひょっこり現れる。水たまりが好き。",
         spawn_time: "all",
-        spawn_weather: "rain" // 【重要】雨の日のみ出現
+        spawn_weather: "rain" 
     },
     "sunset_cat": {
         id: "sunset_cat",
         name: "たそがれ猫",
-        image: "./yumi.png", // ※専用の画像を描いたらファイル名を変更してください
+        image: "./yumi.png", 
         description: "夕暮れ時の海辺を散歩するのが日課。哀愁が漂う。",
-        spawn_time: "sunset" // 【重要】夕方のみ出現
+        spawn_time: "sunset" 
     }
 };
