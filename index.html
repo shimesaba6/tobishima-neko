@@ -18,7 +18,8 @@
         
         #garden-screen { display: none; position: absolute; inset: 0; z-index: 1500; background-image: url('./garden.png'); background-size: cover; background-position: center; overflow: hidden; }
         
-        .garden-cat { position: absolute; transition: top 3s linear, left 3s linear, transform 0.5s; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)); cursor: pointer; }
+        /* 庭の猫の動きのトランジションはJS側で動的に変更します */
+        .garden-cat { position: absolute; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)); cursor: pointer; }
 
         .custom-popup .leaflet-popup-content-wrapper { background-color: #ffe8d6; color: #333; border-radius: 12px; font-weight: bold; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); border: 2px solid #fb923c; }
         .custom-popup .leaflet-popup-tip { background-color: #fb923c; }
@@ -102,6 +103,14 @@
         <div class="absolute top-8 left-4 z-10">
             <button id="back-map-btn" class="bg-white/95 text-gray-800 px-6 py-3 rounded-full font-bold text-lg shadow-md border-2 border-gray-200 interactive">◀ マップ</button>
         </div>
+        <!-- 【追加】遊ぶボタン -->
+        <div class="absolute top-8 right-4 z-10">
+            <button id="toy-btn" class="bg-yellow-400 text-gray-800 px-6 py-3 rounded-full font-bold text-lg shadow-md border-2 border-white interactive transition-colors">🧶 あそぶ</button>
+        </div>
+        
+        <!-- 【追加】指に追従するおもちゃのアイコン -->
+        <div id="toy-icon" class="absolute hidden text-5xl pointer-events-none z-[1600] drop-shadow-lg" style="transform: translate(-50%, -50%); transition: none;">🧶</div>
+
         <div id="garden-container" class="w-full h-full relative"></div>
     </div>
     
@@ -164,6 +173,51 @@
         const DISTANCE_TO_FOOD = 50; 
         const catVoice = new Audio('./catvoice.mp3');
 
+        // ==========================================
+        // 【追加】遊びモードのステータス管理
+        // ==========================================
+        let isToyActive = false;
+        let toyPos = null; // おもちゃの現在地 {x: %, y: %}
+        const toyBtn = document.getElementById('toy-btn');
+        const toyIcon = document.getElementById('toy-icon');
+        const gardenScreen = document.getElementById('garden-screen');
+
+        toyBtn.addEventListener('click', () => {
+            isToyActive = !isToyActive;
+            if (isToyActive) {
+                toyBtn.classList.replace('bg-yellow-400', 'bg-red-500');
+                toyBtn.classList.replace('text-gray-800', 'text-white');
+                toyBtn.innerText = 'やめる';
+            } else {
+                toyBtn.classList.replace('bg-red-500', 'bg-yellow-400');
+                toyBtn.classList.replace('text-white', 'text-gray-800');
+                toyBtn.innerText = '🧶 あそぶ';
+                toyIcon.classList.add('hidden');
+                toyPos = null;
+            }
+        });
+
+        // 画面をなぞった時におもちゃの位置を更新する関数
+        function updateToyPosition(x, y) {
+            if (!isToyActive) return;
+            toyIcon.classList.remove('hidden');
+            const rect = gardenScreen.getBoundingClientRect();
+            // ピクセル座標を%（パーセント）に変換
+            const leftPct = (x / rect.width) * 100;
+            const topPct = (y / rect.height) * 100;
+            toyIcon.style.left = `${leftPct}%`;
+            toyIcon.style.top = `${topPct}%`;
+            toyPos = { x: leftPct, y: topPct };
+        }
+
+        // スマホのスワイプ＆PCのマウス移動対応
+        gardenScreen.addEventListener('mousemove', (e) => updateToyPosition(e.clientX, e.clientY));
+        gardenScreen.addEventListener('touchmove', (e) => {
+            if (isToyActive) e.preventDefault(); // おもちゃを動かしている時に画面がスクロールしないようにブロック
+            updateToyPosition(e.touches[0].clientX, e.touches[0].clientY);
+        }, { passive: false });
+
+
         const customAlertModal = document.getElementById('custom-alert-modal'), customAlertTitle = document.getElementById('custom-alert-title'), customAlertMessage = document.getElementById('custom-alert-message');
         function showCustomAlert(title, message) { customAlertTitle.innerHTML = title; customAlertMessage.innerHTML = message; customAlertModal.classList.remove('hidden'); customAlertModal.classList.add('flex'); }
         document.getElementById('custom-alert-close').addEventListener('click', () => { customAlertModal.classList.add('hidden'); customAlertModal.classList.remove('flex'); });
@@ -201,9 +255,6 @@
 
         function spawnSpecificCat(catId, playerLatLng) { if (!CAT_DATA[catId] || isCatSpawned) return; executeSpawn(CAT_DATA[catId], playerLatLng); }
         
-        // ==========================================
-        // 【アップデート】ガチャ方式の抽選システム
-        // ==========================================
         function spawnRandomCat(playerLatLng) {
             if (isCatSpawned) return;
             const availableCats = [];
@@ -215,27 +266,15 @@
             }
             if (availableCats.length === 0) return;
 
-            // 1. 各猫の「重み」を合計する
             let totalWeight = 0;
-            availableCats.forEach(cat => {
-                // spawn_rateが設定されていればその値、なければ標準の「10」とする
-                totalWeight += (cat.spawn_rate !== undefined ? cat.spawn_rate : 10);
-            });
-
-            // 2. 0 〜 合計重み の間でランダムな数字を引く
+            availableCats.forEach(cat => { totalWeight += (cat.spawn_rate !== undefined ? cat.spawn_rate : 10); });
             let randomNum = Math.random() * totalWeight;
             let selectedCat = availableCats[0];
-
-            // 3. ルーレットを回す
             for (let i = 0; i < availableCats.length; i++) {
                 const weight = availableCats[i].spawn_rate !== undefined ? availableCats[i].spawn_rate : 10;
                 randomNum -= weight;
-                if (randomNum <= 0) {
-                    selectedCat = availableCats[i];
-                    break;
-                }
+                if (randomNum <= 0) { selectedCat = availableCats[i]; break; }
             }
-
             executeSpawn(selectedCat, playerLatLng);
         }
 
@@ -326,18 +365,89 @@
             if (navigator.geolocation) { gpsWatchId = navigator.geolocation.watchPosition((p) => { let lat = p.coords.latitude, lng = p.coords.longitude; if (DEBUG_MODE) { lat = DUMMY_LAT; lng = DUMMY_LNG; } updateLocation(lat, lng); }, (e) => {}, { enableHighAccuracy: true, maximumAge: 2000, timeout: 5000 }); }
         });
 
+        // ==========================================
+        // 【アップデート】遊びモード対応のお庭システム
+        // ==========================================
         document.getElementById('go-garden-btn').addEventListener('click', () => {
-            document.getElementById('map-screen').style.display = 'none'; document.getElementById('garden-screen').style.display = 'block'; const gc = document.getElementById('garden-container'); gc.innerHTML = '';
+            document.getElementById('map-screen').style.display = 'none'; 
+            document.getElementById('garden-screen').style.display = 'block'; 
+            const gc = document.getElementById('garden-container'); 
+            gc.innerHTML = '';
+            
             let activeZukan = [...zukanData]; activeZukan.sort(() => 0.5 - Math.random()); let displayCats = activeZukan.slice(0, 5);
             displayCats.forEach(id => {
                 if (CAT_DATA[id]) {
-                    const el = document.createElement('img'); el.src = CAT_DATA[id].image; el.className = 'garden-cat w-24 h-24 object-contain interactive'; el.style.top = `${Math.random() * 20 + 65}%`; el.style.left = `${Math.random() * 80 + 5}%`;
-                    el.addEventListener('click', () => { catVoice.currentTime = 0; catVoice.play().catch(()=>{}); el.classList.add('bounce-active'); setTimeout(() => el.classList.remove('bounce-active'), 1000); }); gc.appendChild(el);
-                    function move() { setTimeout(() => { if(Math.random()<0.3){ let l = Math.random() * 80 + 5; el.classList.remove('face-left','face-right'); el.classList.add(parseFloat(el.style.left) < l ? 'face-right' : 'face-left'); el.style.top = `${Math.random() * 20 + 65}%`; el.style.left = `${l}%`; } move(); }, Math.random() * 6000 + 2000); } move();
+                    const el = document.createElement('img'); 
+                    el.src = CAT_DATA[id].image; 
+                    el.className = 'garden-cat w-24 h-24 object-contain interactive'; 
+                    // 最初は基本のゆっくりトランジション
+                    el.style.transition = 'top 3s linear, left 3s linear, transform 0.5s';
+                    el.style.top = `${Math.random() * 20 + 65}%`; 
+                    el.style.left = `${Math.random() * 80 + 5}%`;
+                    
+                    el.addEventListener('click', () => { catVoice.currentTime = 0; catVoice.play().catch(()=>{}); el.classList.add('bounce-active'); setTimeout(() => el.classList.remove('bounce-active'), 1000); }); 
+                    gc.appendChild(el);
+                    
+                    function move() { 
+                        let nextActionTime = Math.random() * 6000 + 2000;
+                        
+                        // おもちゃがアクティブなら高確率で飛びかかる
+                        if (isToyActive && toyPos) {
+                            if (Math.random() < 0.6) {
+                                // ダッシュ用の素早いトランジションに変更
+                                el.style.transition = 'top 0.8s ease-out, left 0.8s ease-out, transform 0.2s';
+                                
+                                // 猫たちが完全に重ならないように、おもちゃの周囲に少し散らばらせる
+                                let targetL = toyPos.x + (Math.random() * 10 - 5);
+                                let targetT = toyPos.y + (Math.random() * 10 - 5);
+                                
+                                el.classList.remove('face-left','face-right'); 
+                                el.classList.add(parseFloat(el.style.left) < targetL ? 'face-right' : 'face-left'); 
+                                el.style.top = `${targetT}%`; 
+                                el.style.left = `${targetL}%`;
+                                
+                                if(Math.random() < 0.5) el.classList.add('bounce-active');
+                                setTimeout(() => el.classList.remove('bounce-active'), 500);
+                                
+                                // 遊び中は次の行動までの間隔を短くする
+                                nextActionTime = 1000 + Math.random() * 1000;
+                            } else {
+                                // おもちゃを見てるだけの時間
+                                nextActionTime = 2000;
+                            }
+                        } else {
+                            // 通常の散歩
+                            if(Math.random() < 0.3) { 
+                                // 元のゆっくりトランジションに戻す
+                                el.style.transition = 'top 3s linear, left 3s linear, transform 0.5s';
+                                let l = Math.random() * 80 + 5; 
+                                el.classList.remove('face-left','face-right'); 
+                                el.classList.add(parseFloat(el.style.left) < l ? 'face-right' : 'face-left'); 
+                                el.style.top = `${Math.random() * 20 + 65}%`; 
+                                el.style.left = `${l}%`; 
+                            }
+                        }
+                        setTimeout(move, nextActionTime); 
+                    } 
+                    move();
                 }
             });
         });
-        document.getElementById('back-map-btn').addEventListener('click', () => { document.getElementById('garden-screen').style.display = 'none'; document.getElementById('map-screen').style.display = 'block'; map.invalidateSize(); });
+
+        // 庭からマップに戻る時、遊びモードも自動的に解除する
+        document.getElementById('back-map-btn').addEventListener('click', () => { 
+            document.getElementById('garden-screen').style.display = 'none'; 
+            document.getElementById('map-screen').style.display = 'block'; 
+            map.invalidateSize(); 
+            
+            // 遊びモードの強制リセット
+            isToyActive = false;
+            toyBtn.classList.replace('bg-red-500', 'bg-yellow-400');
+            toyBtn.classList.replace('text-white', 'text-gray-800');
+            toyBtn.innerText = '🧶 あそぶ';
+            toyIcon.classList.add('hidden');
+            toyPos = null;
+        });
 
         document.getElementById('open-zukan').addEventListener('click', () => {
             const zl = document.getElementById('zukan-list'); zl.innerHTML = '';
