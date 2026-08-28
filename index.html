@@ -17,7 +17,6 @@
         .interactive { pointer-events: auto; }
         
         #garden-screen { display: none; position: absolute; inset: 0; z-index: 1500; background-image: url('./garden.png'); background-size: cover; background-position: center; overflow: hidden; }
-        
         .garden-cat { position: absolute; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)); cursor: pointer; }
 
         .custom-popup .leaflet-popup-content-wrapper { background-color: #ffe8d6; color: #333; border-radius: 12px; font-weight: bold; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); border: 2px solid #fb923c; }
@@ -39,6 +38,12 @@
         .rain-layer { position: absolute; inset: 0; pointer-events: none; z-index: 900; background-image: linear-gradient(160deg, transparent 0%, transparent 95%, rgba(255,255,255,0.7) 100%); background-size: 15px 80px; animation: rainFall 0.4s linear infinite; display: none; }
         body.is-raining .rain-layer { display: block; }
         @keyframes rainFall { 0% { background-position: 0 0; } 100% { background-position: -15px 80px; } }
+
+        /* ミニゲーム用CSS */
+        @keyframes fruitFall { 0% { top: -100px; transform: rotate(0deg); } 100% { top: 110dvh; transform: rotate(360deg); } }
+        .fruit-item { position: absolute; width: 70px; height: 70px; object-fit: contain; filter: drop-shadow(0 6px 6px rgba(0,0,0,0.4)); cursor: pointer; animation: fruitFall 3s linear forwards; pointer-events: auto; }
+        .score-popup { position: absolute; font-weight: black; font-size: 28px; animation: floatUp 0.8s ease-out forwards; pointer-events: none; text-shadow: 0 2px 4px rgba(255,255,255,0.8); z-index: 2500; }
+        @keyframes floatUp { 0% { opacity: 1; transform: translate(-50%, -50%); } 100% { opacity: 0; transform: translate(-50%, -100px); } }
     </style>
 </head>
 <body class="w-screen relative" style="height: 100dvh;">
@@ -71,17 +76,20 @@
         </div>
 
         <div class="ui-layer bottom-0 left-0 w-full p-3 pb-6 flex justify-between items-end gap-2">
+            <!-- 左側UI（ミニゲームボタン追加） -->
             <div class="flex flex-col gap-3">
                 <button id="go-garden-btn" class="bg-green-500 text-white w-14 h-14 rounded-full text-2xl shadow-lg interactive border-4 border-white">🏡</button>
                 <button id="open-ar-btn" class="bg-pink-400 text-white w-14 h-14 rounded-full text-2xl shadow-lg interactive border-4 border-white">✨</button>
+                <button id="open-minigame-btn" class="bg-orange-400 text-white w-14 h-14 rounded-full text-2xl shadow-lg interactive border-4 border-white transition-transform active:scale-95">🍊</button>
             </div>
             
+            <!-- 中央UI -->
             <div class="bg-white/95 backdrop-blur-md px-2 py-2 rounded-3xl shadow-lg flex flex-1 flex-col items-center justify-center interactive border-2 border-orange-200 max-w-[140px]">
                 <div class="flex items-center justify-center gap-1 mb-1 w-full">
                     <div class="w-8 h-8 shrink-0 bg-orange-100 rounded-full flex items-center justify-center text-lg shadow-inner">🐟</div>
                     <div class="text-center">
                         <p class="text-[9px] text-gray-600 font-bold leading-none mb-1">エサ</p>
-                        <p id="food-count" class="font-black text-xl leading-none text-gray-800">3</p>
+                        <p id="food-count" class="font-black text-xl leading-none text-gray-800">0</p>
                     </div>
                 </div>
                 <div class="w-full bg-orange-100 rounded-full h-3 relative overflow-hidden border border-orange-200">
@@ -90,6 +98,7 @@
                 </div>
             </div>
 
+            <!-- 右側UI -->
             <div class="flex flex-col gap-3">
                 <button id="open-qr-btn" class="bg-yellow-400 text-white w-14 h-14 rounded-full text-2xl shadow-lg interactive border-4 border-white">📷</button>
                 <button id="open-zukan" class="bg-indigo-500 text-white w-14 h-14 rounded-full text-2xl shadow-lg interactive border-4 border-white">📖</button>
@@ -105,13 +114,11 @@
         <div class="absolute top-8 right-4 z-10">
             <button id="toy-btn" class="bg-yellow-400 text-gray-800 px-6 py-3 rounded-full font-bold text-lg shadow-md border-2 border-white interactive transition-colors">🧶 あそぶ</button>
         </div>
-        
         <div id="toy-icon" class="absolute hidden text-5xl pointer-events-none z-[1600] drop-shadow-lg" style="transform: translate(-50%, -50%); transition: none;">🧶</div>
-
         <div id="garden-container" class="w-full h-full relative"></div>
     </div>
     
-    <!-- モーダル群 -->
+    <!-- モーダル群（図鑑・写真など） -->
     <div id="zukan-modal" class="fixed inset-0 bg-black/60 z-[3000] items-center justify-center p-4 backdrop-blur-sm"><div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl relative interactive border-4 border-indigo-200 flex flex-col max-h-[90dvh]"><h2 class="text-2xl font-black text-center text-indigo-800 mb-1">ねこ図鑑</h2><p class="text-center text-[11px] text-orange-600 font-bold mb-4">※まるい画像をタップで拡大</p><div id="cat-detail" class="bg-white rounded-2xl p-4 mb-4 min-h-[100px] flex items-center justify-center text-center shadow-inner border border-gray-200 shrink-0"><p class="text-gray-500 font-bold">ねこをタップするニャ</p></div><div class="grid grid-cols-3 gap-3 overflow-y-auto p-1 flex-1" id="zukan-list"></div><div class="mt-6 text-center shrink-0"><button id="close-zukan" class="bg-gray-300 px-10 py-4 rounded-full font-bold text-lg shadow-sm">とじる</button><p id="open-reset-btn" class="text-[11px] text-gray-400 font-bold mt-4 underline cursor-pointer p-2">データを初期化する</p></div></div></div>
     <div id="image-modal" class="fixed inset-0 bg-black/80 z-[5000] hidden flex-col items-center justify-center p-4 interactive"><div class="w-full max-w-md flex justify-end mb-2 pr-4"><button id="close-image-modal" class="text-white text-5xl font-bold">&times;</button></div><img id="enlarged-image" src="" class="w-[90%] max-w-[300px] object-contain filter drop-shadow-lg"></div>
     <div id="qr-modal" class="fixed inset-0 bg-black/90 z-[6000] hidden flex-col items-center justify-center p-4 interactive"><h2 class="text-white text-xl font-bold mb-4">シークレットQRを探せ！</h2><div id="qr-reader" class="w-full max-w-sm bg-white rounded-xl overflow-hidden mb-6"></div><button id="close-qr-btn" class="bg-red-500 text-white px-8 py-3 rounded-full font-bold text-lg">やめる</button></div>
@@ -122,7 +129,6 @@
     <div id="ar-modal" class="fixed inset-0 bg-black z-[8000] hidden flex-col interactive">
         <video id="ar-video" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline></video>
         <img id="ar-cat-img" src="" class="absolute hidden w-40 h-40 object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.6)]" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
-        
         <div id="ar-ui-layer" class="absolute inset-0 flex flex-col justify-between p-4 pb-12 pointer-events-none">
             <button id="close-ar-btn" class="self-end bg-red-500 text-white px-4 py-2 rounded-full font-bold pointer-events-auto border-2 border-white shadow-lg mt-2">✖ 閉じる</button>
             <div class="flex flex-col gap-3 pointer-events-auto items-center mb-8">
@@ -133,13 +139,61 @@
         </div>
     </div>
 
-    <!-- 撮影結果画面 -->
+    <!-- AR撮影結果画面 -->
     <div id="ar-result-modal" class="fixed inset-0 bg-black/95 z-[9000] hidden flex-col items-center justify-center p-4 interactive">
         <p class="text-white font-bold mb-4">きれいに撮れたニャ！</p>
         <img id="ar-result-img" src="" class="w-full max-w-sm rounded-lg shadow-2xl mb-8 border-4 border-white object-contain max-h-[60dvh]">
         <div class="flex gap-4">
             <button id="close-ar-result-btn" class="bg-gray-500 text-white px-6 py-3 rounded-full font-bold text-lg">とじる</button>
             <button id="download-ar-result-btn" class="bg-blue-500 text-white px-6 py-3 rounded-full font-bold text-lg flex items-center gap-2">💾 保存する</button>
+        </div>
+    </div>
+
+    <!-- ================================================== -->
+    <!-- 【追加】ミニゲーム画面（ねこの柑橘ソムリエ） -->
+    <!-- ================================================== -->
+    <div id="minigame-screen" class="hidden absolute inset-0 z-[2000] bg-orange-50 flex-col overflow-hidden interactive">
+        
+        <!-- ヘッダー（お題・時間・スコア） -->
+        <div class="absolute top-0 left-0 w-full px-6 py-4 flex justify-between items-center z-10 bg-white/90 backdrop-blur-md shadow-sm">
+            <div class="text-left w-1/3">
+                <p class="text-[10px] font-bold text-gray-500 mb-1">お題の柑橘</p>
+                <p id="mg-target-name" class="text-lg font-black text-orange-600 leading-none">準備中...</p>
+            </div>
+            <div class="text-center w-1/3 border-x-2 border-orange-100">
+                <p class="text-[10px] font-bold text-gray-500 mb-1">残り時間</p>
+                <p id="mg-time" class="text-3xl font-black text-red-500 leading-none">30</p>
+            </div>
+            <div class="text-right w-1/3">
+                <p class="text-[10px] font-bold text-gray-500 mb-1">収穫数</p>
+                <p id="mg-score" class="text-3xl font-black text-green-600 leading-none">0</p>
+            </div>
+        </div>
+
+        <!-- みかんが降ってくるエリア -->
+        <div id="mg-play-area" class="w-full h-full relative overflow-hidden pointer-events-none"></div>
+
+        <!-- ゲーム開始・終了時のオーバーレイ -->
+        <div id="mg-overlay" class="absolute inset-0 bg-black/70 flex items-center justify-center z-20">
+            <div class="bg-white p-6 rounded-3xl text-center shadow-2xl border-4 border-orange-400 max-w-[320px] w-[90%]">
+                <h2 id="mg-title" class="text-2xl font-black text-orange-600 mb-4">ねこの柑橘ソムリエ</h2>
+                <p id="mg-desc" class="font-bold text-gray-600 text-[13px] mb-6 leading-relaxed">
+                    上から降ってくる多種多様な柑橘の中から<br><span class="text-orange-600 font-black">【お題と同じもの】</span>だけをタップで収穫！<br>間違えると時間が2秒減るニャ。
+                </p>
+                
+                <div id="mg-result" class="hidden mb-6 bg-orange-50 rounded-xl p-4 border border-orange-200">
+                    <p class="text-sm font-bold text-gray-600 mb-2">今回の収穫</p>
+                    <p class="text-3xl font-black text-green-600 mb-2"><span id="mg-result-score">0</span> <span class="text-sm text-gray-800">個</span></p>
+                    <hr class="border-orange-200 my-2">
+                    <p class="text-[11px] font-bold text-gray-500">※5個収穫でエサ1個と交換</p>
+                    <p class="text-lg font-bold text-orange-700 mt-1">エサを <span id="mg-result-food" class="text-3xl font-black">0</span> 個ゲット！</p>
+                </div>
+
+                <div class="flex gap-3 justify-center">
+                    <button id="mg-close-btn" class="bg-gray-400 text-white px-6 py-3 rounded-full font-bold shadow-md active:scale-95">もどる</button>
+                    <button id="mg-start-btn" class="bg-orange-500 text-white px-8 py-3 rounded-full font-bold shadow-md active:scale-95">スタート！</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -162,7 +216,6 @@
             { id: "okitomo", name: "沖友天満宮", lat: 34.1750, lng: 132.8600, radius: 30, timeReq: 3 * 60, catId: "stay_okitomo" }
         ];
 
-        // おとものヒントやセリフのリスト
         const OTOMO_COMMENTS = [
             "足元にすりすりしてきた！",
             "道端のにおいをクンクン嗅いでいる。",
@@ -175,7 +228,7 @@
             "「ここは景色がいいニャ〜。歩くの楽しいニャ！」"
         ];
 
-        let currentIslandKey = null, isCatSpawned = false, foodCount = 3;
+        let currentIslandKey = null, isCatSpawned = false;
         let zukanData = JSON.parse(localStorage.getItem('tobishima_zukan')) || [];
         
         let activeOtomoId = localStorage.getItem('tobishima_otomo') || null;
@@ -189,24 +242,30 @@
         const catVoice = new Audio('./catvoice.mp3');
         const catHungryVoice = new Audio('./cat_hungry.mp3'); 
 
-        let isToyActive = false;
-        let toyPos = null; 
-        const toyBtn = document.getElementById('toy-btn');
-        const toyIcon = document.getElementById('toy-icon');
-        const gardenScreen = document.getElementById('garden-screen');
+        let foodCount = parseInt(localStorage.getItem('tobishima_food'));
+        if (isNaN(foodCount)) foodCount = 3; 
+        document.getElementById('food-count').innerHTML = `${foodCount}`;
+
+        let justGotDailyBonus = false;
+        const todayStr = new Date().toLocaleDateString();
+        const lastLoginDate = localStorage.getItem('tobishima_last_login');
+        if (lastLoginDate !== todayStr) {
+            if (lastLoginDate !== null) { foodCount += 3; justGotDailyBonus = true; }
+            localStorage.setItem('tobishima_last_login', todayStr);
+            localStorage.setItem('tobishima_food', foodCount);
+            document.getElementById('food-count').innerHTML = `${foodCount}`;
+        }
+
+        let isToyActive = false, toyPos = null; 
+        const toyBtn = document.getElementById('toy-btn'), toyIcon = document.getElementById('toy-icon'), gardenScreen = document.getElementById('garden-screen');
 
         toyBtn.addEventListener('click', () => {
             isToyActive = !isToyActive;
             if (isToyActive) {
-                toyBtn.classList.replace('bg-yellow-400', 'bg-red-500');
-                toyBtn.classList.replace('text-gray-800', 'text-white');
-                toyBtn.innerText = 'やめる';
+                toyBtn.classList.replace('bg-yellow-400', 'bg-red-500'); toyBtn.classList.replace('text-gray-800', 'text-white'); toyBtn.innerText = 'やめる';
             } else {
-                toyBtn.classList.replace('bg-red-500', 'bg-yellow-400');
-                toyBtn.classList.replace('text-white', 'text-gray-800');
-                toyBtn.innerText = '🧶 あそぶ';
-                toyIcon.classList.add('hidden');
-                toyPos = null;
+                toyBtn.classList.replace('bg-red-500', 'bg-yellow-400'); toyBtn.classList.replace('text-white', 'text-gray-800'); toyBtn.innerText = '🧶 あそぶ';
+                toyIcon.classList.add('hidden'); toyPos = null;
             }
         });
 
@@ -214,17 +273,12 @@
             if (!isToyActive) return;
             toyIcon.classList.remove('hidden');
             const rect = gardenScreen.getBoundingClientRect();
-            const leftPct = (x / rect.width) * 100;
-            const topPct = (y / rect.height) * 100;
-            toyIcon.style.left = `${leftPct}%`;
-            toyIcon.style.top = `${topPct}%`;
+            const leftPct = (x / rect.width) * 100, topPct = (y / rect.height) * 100;
+            toyIcon.style.left = `${leftPct}%`; toyIcon.style.top = `${topPct}%`;
             toyPos = { x: leftPct, y: topPct };
         }
         gardenScreen.addEventListener('mousemove', (e) => updateToyPosition(e.clientX, e.clientY));
-        gardenScreen.addEventListener('touchmove', (e) => {
-            if (isToyActive) e.preventDefault(); 
-            updateToyPosition(e.touches[0].clientX, e.touches[0].clientY);
-        }, { passive: false });
+        gardenScreen.addEventListener('touchmove', (e) => { if (isToyActive) e.preventDefault(); updateToyPosition(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
 
         const customAlertModal = document.getElementById('custom-alert-modal'), customAlertTitle = document.getElementById('custom-alert-title'), customAlertMessage = document.getElementById('custom-alert-message');
         function showCustomAlert(title, message) { customAlertTitle.innerHTML = title; customAlertMessage.innerHTML = message; customAlertModal.classList.remove('hidden'); customAlertModal.classList.add('flex'); }
@@ -233,13 +287,12 @@
         document.getElementById('open-reset-btn').addEventListener('click', () => { document.getElementById('reset-checkbox').checked = false; let btn = document.getElementById('execute-reset-btn'); btn.disabled = true; btn.className = "flex-1 bg-gray-400 text-white py-3 rounded-full font-bold pointer-events-none"; document.getElementById('reset-confirm-modal').classList.remove('hidden'); document.getElementById('reset-confirm-modal').classList.add('flex'); });
         document.getElementById('cancel-reset-btn').addEventListener('click', () => { document.getElementById('reset-confirm-modal').classList.add('hidden'); document.getElementById('reset-confirm-modal').classList.remove('flex'); });
         document.getElementById('reset-checkbox').addEventListener('change', (e) => { let btn = document.getElementById('execute-reset-btn'); if (e.target.checked) { btn.disabled = false; btn.className = "flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-full font-bold"; } else { btn.disabled = true; btn.className = "flex-1 bg-gray-400 text-white py-3 rounded-full font-bold pointer-events-none"; } });
-        document.getElementById('execute-reset-btn').addEventListener('click', () => { localStorage.removeItem('tobishima_zukan'); localStorage.removeItem('tobishima_otomo'); zukanData = []; activeOtomoId = null; foodCount = 3; distanceWalked = 0; document.getElementById('food-count').innerHTML = `3`; document.getElementById('distance-progress').innerText = `あと ${DISTANCE_TO_FOOD}m`; document.getElementById('distance-bar').style.width = `0%`; document.getElementById('reset-confirm-modal').classList.add('hidden'); document.getElementById('reset-confirm-modal').classList.remove('flex'); document.getElementById('zukan-modal').classList.remove('show'); showCustomAlert('データ初期化完了', '図鑑とエサのデータをリセットしました。'); });
+        document.getElementById('execute-reset-btn').addEventListener('click', () => { localStorage.removeItem('tobishima_zukan'); localStorage.removeItem('tobishima_otomo'); localStorage.removeItem('tobishima_food'); localStorage.removeItem('tobishima_last_login'); zukanData = []; activeOtomoId = null; foodCount = 3; distanceWalked = 0; document.getElementById('food-count').innerHTML = `3`; document.getElementById('distance-progress').innerText = `あと ${DISTANCE_TO_FOOD}m`; document.getElementById('distance-bar').style.width = `0%`; document.getElementById('reset-confirm-modal').classList.add('hidden'); document.getElementById('reset-confirm-modal').classList.remove('flex'); document.getElementById('zukan-modal').classList.remove('show'); showCustomAlert('データ初期化完了', '図鑑とエサのデータをリセットしました。'); });
 
         const map = L.map('map', { zoomControl: false }).setView([35.681236, 139.767125], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
         const BASE_ICON_SIZE = 80;
-        let playerMarker = null, activeCatMarker = null, activeCatIconOptions = null, moveInterval = null;
-        let catCurrentLatLng = null; 
+        let playerMarker = null, activeCatMarker = null, activeCatIconOptions = null, moveInterval = null, catCurrentLatLng = null; 
         const recenterContainer = document.getElementById('recenter-container');
 
         map.on('dragstart', () => { if (isTracking) { isTracking = false; recenterContainer.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4'); recenterContainer.classList.add('opacity-100', 'pointer-events-auto', 'translate-y-0'); } });
@@ -262,7 +315,6 @@
         }
 
         function spawnSpecificCat(catId, playerLatLng) { if (!CAT_DATA[catId] || isCatSpawned) return; executeSpawn(CAT_DATA[catId], playerLatLng); }
-        
         function spawnRandomCat(playerLatLng) {
             if (isCatSpawned) return;
             const availableCats = [];
@@ -288,11 +340,9 @@
 
         function executeSpawn(selectedCat, playerLatLng) {
             isCatSpawned = true; catVoice.currentTime = 0; catVoice.play().catch(e => {}); if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-            
             const fleeTime = selectedCat.flee_time ? selectedCat.flee_time * 1000 : 5 * 60 * 1000;
             if (catDespawnTimer) clearTimeout(catDespawnTimer);
             catDespawnTimer = setTimeout(() => { despawnCat(); }, fleeTime);
-
             activeCatIconOptions = { html: `<img src="${selectedCat.image}" id="cat-image" class="cat-wrapper" style="width: ${BASE_ICON_SIZE}px; height: ${BASE_ICON_SIZE}px;">` };
             const catIcon = L.divIcon({ html: activeCatIconOptions.html, className: '', iconSize: [BASE_ICON_SIZE, BASE_ICON_SIZE], iconAnchor: [BASE_ICON_SIZE/2, BASE_ICON_SIZE], popupAnchor: [0, -BASE_ICON_SIZE] });
             catCurrentLatLng = L.latLng(playerLatLng.lat + (Math.random()*0.001 - 0.0005), playerLatLng.lng + (Math.random()*0.001 - 0.0005));
@@ -301,7 +351,8 @@
             activeCatMarker.on('click', () => {
                 if(foodCount > 0) {
                     if (catDespawnTimer) clearTimeout(catDespawnTimer); 
-                    foodCount--; document.getElementById('food-count').innerHTML = `${foodCount}`; addToZukan(selectedCat.id);
+                    foodCount--; document.getElementById('food-count').innerHTML = `${foodCount}`; localStorage.setItem('tobishima_food', foodCount);
+                    addToZukan(selectedCat.id);
                     activeCatMarker.bindPopup(`<b style="font-size: 16px;">「ありがとうニャ！」<br><span style="color: #ea580c; font-size: 12px; margin-top: 4px;">お庭に遊びにくるニャ！</span></b>`, { className: 'custom-popup' }).openPopup();
                     setTimeout(() => { despawnCat(); }, 3000); 
                 } else { activeCatMarker.bindPopup('<b style="font-size: 16px;">「エサがないニャ...」</b>', { className: 'custom-popup' }).openPopup(); }
@@ -362,33 +413,22 @@
             if (activeOtomoId && CAT_DATA[activeOtomoId]) {
                 const otomoCat = CAT_DATA[activeOtomoId];
                 const otomoLatLng = L.latLng(lat - 0.00005, lng - 0.00005);
-                
                 if (!otomoMarker || currentOtomoRenderedId !== activeOtomoId) {
                     if(otomoMarker) map.removeLayer(otomoMarker);
-                    const otomoIcon = L.divIcon({
-                        html: `<img src="${otomoCat.image}" style="width: 50px; height: 50px; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5));" class="face-right">`,
-                        className: '', iconSize: [50, 50], iconAnchor: [25, 50], popupAnchor: [0, -50]
-                    });
+                    const otomoIcon = L.divIcon({ html: `<img src="${otomoCat.image}" style="width: 50px; height: 50px; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5));" class="face-right">`, className: '', iconSize: [50, 50], iconAnchor: [25, 50], popupAnchor: [0, -50] });
                     otomoMarker = L.marker(otomoLatLng, { icon: otomoIcon, zIndexOffset: 900 }).addTo(map);
                     currentOtomoRenderedId = activeOtomoId;
-
-                    otomoMarker.on('click', () => {
-                        catVoice.currentTime = 0; catVoice.play().catch(()=>{});
-                        const msg = OTOMO_COMMENTS[Math.floor(Math.random() * OTOMO_COMMENTS.length)];
-                        otomoMarker.bindPopup(`<b style="font-size: 14px; line-height: 1.4; display: block; padding: 4px;">${msg}</b>`, { className: 'custom-popup' }).openPopup();
-                    });
-                } else {
-                    otomoMarker.setLatLng(otomoLatLng);
-                }
-            } else if (otomoMarker) {
-                map.removeLayer(otomoMarker);
-                otomoMarker = null;
-            }
-
+                    otomoMarker.on('click', () => { catVoice.currentTime = 0; catVoice.play().catch(()=>{}); const msg = OTOMO_COMMENTS[Math.floor(Math.random() * OTOMO_COMMENTS.length)]; otomoMarker.bindPopup(`<b style="font-size: 14px; line-height: 1.4; display: block; padding: 4px;">${msg}</b>`, { className: 'custom-popup' }).openPopup(); });
+                } else { otomoMarker.setLatLng(otomoLatLng); }
+            } else if (otomoMarker) { map.removeLayer(otomoMarker); otomoMarker = null; }
 
             if (lastLatLng && !DEBUG_MODE) {
                 const dist = getDistance(lastLatLng.lat, lastLatLng.lng, lat, lng);
-                if (dist > 1 && dist < 50) { distanceWalked += dist; if (distanceWalked >= DISTANCE_TO_FOOD) { foodCount++; distanceWalked = 0; document.getElementById('food-count').innerHTML = `${foodCount}`; } document.getElementById('distance-progress').innerText = `あと ${Math.ceil(Math.max(0, DISTANCE_TO_FOOD - distanceWalked))}m`; document.getElementById('distance-bar').style.width = `${(distanceWalked / DISTANCE_TO_FOOD) * 100}%`; }
+                if (dist > 1 && dist < 50) { 
+                    distanceWalked += dist; 
+                    if (distanceWalked >= DISTANCE_TO_FOOD) { foodCount++; distanceWalked = 0; document.getElementById('food-count').innerHTML = `${foodCount}`; localStorage.setItem('tobishima_food', foodCount); } 
+                    document.getElementById('distance-progress').innerText = `あと ${Math.ceil(Math.max(0, DISTANCE_TO_FOOD - distanceWalked))}m`; document.getElementById('distance-bar').style.width = `${(distanceWalked / DISTANCE_TO_FOOD) * 100}%`; 
+                }
             }
             lastLatLng = { lat: lat, lng: lng }; checkWeather(lat, lng); checkStaySpot(lat, lng);
             let isIsland = false;
@@ -399,193 +439,196 @@
         document.getElementById('start-btn').addEventListener('click', () => {
             catVoice.play().then(() => { catVoice.pause(); catVoice.currentTime = 0; }).catch(() => {});
             document.getElementById('start-screen').style.opacity = '0'; setTimeout(() => { document.getElementById('start-screen').style.display = 'none'; }, 500); document.getElementById('loading').style.display = 'flex';
+            if (justGotDailyBonus) { setTimeout(() => { showCustomAlert('🎁 ログインボーナス！', '新しい1日が始まったニャ！<br>エサを 3個 プレゼントするニャ！'); }, 1000); }
             if (navigator.geolocation) { gpsWatchId = navigator.geolocation.watchPosition((p) => { let lat = p.coords.latitude, lng = p.coords.longitude; if (DEBUG_MODE) { lat = DUMMY_LAT; lng = DUMMY_LNG; } updateLocation(lat, lng); }, (e) => {}, { enableHighAccuracy: true, maximumAge: 2000, timeout: 5000 }); }
         });
 
         document.getElementById('go-garden-btn').addEventListener('click', () => {
-            document.getElementById('map-screen').style.display = 'none'; 
-            document.getElementById('garden-screen').style.display = 'block'; 
-            const gc = document.getElementById('garden-container'); 
-            gc.innerHTML = '';
-            
+            document.getElementById('map-screen').style.display = 'none'; document.getElementById('garden-screen').style.display = 'block'; const gc = document.getElementById('garden-container'); gc.innerHTML = '';
             let activeZukan = [...zukanData]; activeZukan.sort(() => 0.5 - Math.random()); let displayCats = activeZukan.slice(0, 5);
             displayCats.forEach(id => {
                 if (CAT_DATA[id]) {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'garden-cat absolute w-24 h-24 interactive';
-                    wrapper.style.transition = 'top 3s linear, left 3s linear, transform 0.5s';
-                    wrapper.style.top = `${Math.random() * 20 + 65}%`; 
-                    wrapper.style.left = `${Math.random() * 80 + 5}%`;
+                    const wrapper = document.createElement('div'); wrapper.className = 'garden-cat absolute w-24 h-24 interactive'; wrapper.style.transition = 'top 3s linear, left 3s linear, transform 0.5s'; wrapper.style.top = `${Math.random() * 20 + 65}%`; wrapper.style.left = `${Math.random() * 80 + 5}%`;
+                    const img = document.createElement('img'); img.src = CAT_DATA[id].image; img.className = 'w-full h-full object-contain'; 
+                    const bubble = document.createElement('div'); bubble.innerHTML = '🐟'; bubble.className = 'absolute -top-4 left-1/2 transform -translate-x-1/2 bg-white rounded-full px-2 py-0.5 shadow-md border border-gray-200 text-sm animate-bounce hidden pointer-events-none';
+                    wrapper.appendChild(img); wrapper.appendChild(bubble); gc.appendChild(wrapper);
 
-                    const img = document.createElement('img'); 
-                    img.src = CAT_DATA[id].image; 
-                    img.className = 'w-full h-full object-contain'; 
-
-                    const bubble = document.createElement('div');
-                    bubble.innerHTML = '🐟';
-                    bubble.className = 'absolute -top-4 left-1/2 transform -translate-x-1/2 bg-white rounded-full px-2 py-0.5 shadow-md border border-gray-200 text-sm animate-bounce hidden pointer-events-none';
-
-                    wrapper.appendChild(img);
-                    wrapper.appendChild(bubble);
-                    gc.appendChild(wrapper);
-
-                    let isHungry = Math.random() < 0.3;
-                    if (isHungry) bubble.classList.remove('hidden');
-                    
+                    let isHungry = Math.random() < 0.3; if (isHungry) bubble.classList.remove('hidden');
                     wrapper.addEventListener('click', () => { 
                         if (isHungry) {
-                            if (foodCount > 0) {
-                                foodCount--; 
-                                document.getElementById('food-count').innerHTML = foodCount;
-                                isHungry = false;
-                                bubble.classList.add('hidden');
-                                
-                                catHungryVoice.currentTime = 0; 
-                                catHungryVoice.play().catch(()=>{});
-                                
-                                activeOtomoId = id;
-                                localStorage.setItem('tobishima_otomo', activeOtomoId);
-                                
-                                showCustomAlert('おとも決定！', `「${CAT_DATA[id].name}」が一緒に散歩してくれることになったニャ！<br>マップに戻ってみよう！`);
-                            } else {
-                                showCustomAlert('エサがないニャ', 'エサを持っていないとあげられないニャ。<br>歩いて見つけてくるニャ！');
-                            }
-                        } else {
-                            catVoice.currentTime = 0; catVoice.play().catch(()=>{}); 
-                            wrapper.classList.add('bounce-active'); setTimeout(() => wrapper.classList.remove('bounce-active'), 1000); 
-                        }
+                            if (foodCount > 0) { foodCount--; document.getElementById('food-count').innerHTML = foodCount; localStorage.setItem('tobishima_food', foodCount); isHungry = false; bubble.classList.add('hidden'); catHungryVoice.currentTime = 0; catHungryVoice.play().catch(()=>{}); activeOtomoId = id; localStorage.setItem('tobishima_otomo', activeOtomoId); showCustomAlert('おとも決定！', `「${CAT_DATA[id].name}」が一緒に散歩してくれることになったニャ！<br>マップに戻ってみよう！`); } 
+                            else { showCustomAlert('エサがないニャ', 'エサを持っていないとあげられないニャ。<br>歩いて見つけてくるニャ！'); }
+                        } else { catVoice.currentTime = 0; catVoice.play().catch(()=>{}); wrapper.classList.add('bounce-active'); setTimeout(() => wrapper.classList.remove('bounce-active'), 1000); }
                     }); 
-                    
                     function move() { 
                         let nextActionTime = Math.random() * 6000 + 2000;
                         if (isToyActive && toyPos) {
-                            if (Math.random() < 0.6) {
-                                wrapper.style.transition = 'top 0.8s ease-out, left 0.8s ease-out, transform 0.2s';
-                                let targetL = toyPos.x + (Math.random() * 10 - 5);
-                                let targetT = toyPos.y + (Math.random() * 10 - 5);
-                                wrapper.classList.remove('face-left','face-right'); 
-                                wrapper.classList.add(parseFloat(wrapper.style.left) < targetL ? 'face-right' : 'face-left'); 
-                                wrapper.style.top = `${targetT}%`; 
-                                wrapper.style.left = `${targetL}%`;
-                                if(Math.random() < 0.5) wrapper.classList.add('bounce-active');
-                                setTimeout(() => wrapper.classList.remove('bounce-active'), 500);
-                                nextActionTime = 1000 + Math.random() * 1000;
-                            } else {
-                                nextActionTime = 2000;
-                            }
+                            if (Math.random() < 0.6) { wrapper.style.transition = 'top 0.8s ease-out, left 0.8s ease-out, transform 0.2s'; let targetL = toyPos.x + (Math.random() * 10 - 5), targetT = toyPos.y + (Math.random() * 10 - 5); wrapper.classList.remove('face-left','face-right'); wrapper.classList.add(parseFloat(wrapper.style.left) < targetL ? 'face-right' : 'face-left'); wrapper.style.top = `${targetT}%`; wrapper.style.left = `${targetL}%`; if(Math.random() < 0.5) wrapper.classList.add('bounce-active'); setTimeout(() => wrapper.classList.remove('bounce-active'), 500); nextActionTime = 1000 + Math.random() * 1000; } 
+                            else { nextActionTime = 2000; }
                         } else {
-                            if(Math.random() < 0.3) { 
-                                wrapper.style.transition = 'top 3s linear, left 3s linear, transform 0.5s';
-                                let l = Math.random() * 80 + 5; 
-                                wrapper.classList.remove('face-left','face-right'); 
-                                wrapper.classList.add(parseFloat(wrapper.style.left) < l ? 'face-right' : 'face-left'); 
-                                wrapper.style.top = `${Math.random() * 20 + 65}%`; 
-                                wrapper.style.left = `${l}%`; 
-                            }
-                        }
-                        setTimeout(move, nextActionTime); 
-                    } 
-                    move();
+                            if(Math.random() < 0.3) { wrapper.style.transition = 'top 3s linear, left 3s linear, transform 0.5s'; let l = Math.random() * 80 + 5; wrapper.classList.remove('face-left','face-right'); wrapper.classList.add(parseFloat(wrapper.style.left) < l ? 'face-right' : 'face-left'); wrapper.style.top = `${Math.random() * 20 + 65}%`; wrapper.style.left = `${l}%`; }
+                        } setTimeout(move, nextActionTime); 
+                    } move();
                 }
             });
         });
+        document.getElementById('back-map-btn').addEventListener('click', () => { document.getElementById('garden-screen').style.display = 'none'; document.getElementById('map-screen').style.display = 'block'; map.invalidateSize(); isToyActive = false; toyBtn.classList.replace('bg-red-500', 'bg-yellow-400'); toyBtn.classList.replace('text-white', 'text-gray-800'); toyBtn.innerText = '🧶 あそぶ'; toyIcon.classList.add('hidden'); toyPos = null; });
 
-        document.getElementById('back-map-btn').addEventListener('click', () => { 
-            document.getElementById('garden-screen').style.display = 'none'; 
-            document.getElementById('map-screen').style.display = 'block'; 
-            map.invalidateSize(); 
-            isToyActive = false;
-            toyBtn.classList.replace('bg-red-500', 'bg-yellow-400');
-            toyBtn.classList.replace('text-white', 'text-gray-800');
-            toyBtn.innerText = '🧶 あそぶ';
-            toyIcon.classList.add('hidden');
-            toyPos = null;
-        });
-
-        document.getElementById('open-zukan').addEventListener('click', () => {
-            const zl = document.getElementById('zukan-list'); zl.innerHTML = '';
-            for (const key in CAT_DATA) {
-                const cat = CAT_DATA[key]; const isDisc = zukanData.includes(key); const el = document.createElement('div'); el.className = "flex flex-col items-center p-2 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer";
-                el.innerHTML = `<img src="${cat.image}" class="w-16 h-16 object-contain mb-2" style="${isDisc ? "" : "filter: brightness(0) invert(0.8);"}"><p class="text-xs font-bold">${isDisc ? cat.name : "？？？"}</p>`;
-                el.addEventListener('click', () => {
-                    if (isDisc) { document.getElementById('cat-detail').innerHTML = `<div class="flex items-center gap-4 w-full"><div id="detail-img-btn" class="w-20 h-20 shrink-0 bg-orange-100 rounded-full flex items-center justify-center border-4 border-orange-200 cursor-pointer"><img src="${cat.image}" class="w-16 h-16 object-contain pointer-events-none"></div><div class="text-left"><p class="font-black text-indigo-800 text-xl">${cat.name}</p><p class="text-sm text-gray-700 mt-2 font-medium">${cat.description}</p></div></div>`; document.getElementById('detail-img-btn').addEventListener('click', () => { document.getElementById('enlarged-image').src = cat.image; document.getElementById('image-modal').classList.remove('hidden'); document.getElementById('image-modal').classList.add('flex'); }); }
-                    else document.getElementById('cat-detail').innerHTML = `<div class="flex items-center gap-4 w-full"><div class="w-20 h-20 shrink-0 bg-gray-200 rounded-full flex items-center justify-center text-3xl text-gray-400 font-black border-4 border-gray-300">？</div><div class="text-left"><p class="font-black text-gray-500 text-xl">？？？</p><p class="text-sm text-gray-500 mt-2 font-medium">まだであっていないニャ</p></div></div>`;
-                }); zl.appendChild(el);
-            } document.getElementById('zukan-modal').classList.add('show');
-        });
+        document.getElementById('open-zukan').addEventListener('click', () => { const zl = document.getElementById('zukan-list'); zl.innerHTML = ''; for (const key in CAT_DATA) { const cat = CAT_DATA[key]; const isDisc = zukanData.includes(key); const el = document.createElement('div'); el.className = "flex flex-col items-center p-2 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer"; el.innerHTML = `<img src="${cat.image}" class="w-16 h-16 object-contain mb-2" style="${isDisc ? "" : "filter: brightness(0) invert(0.8);"}"><p class="text-xs font-bold">${isDisc ? cat.name : "？？？"}</p>`; el.addEventListener('click', () => { if (isDisc) { document.getElementById('cat-detail').innerHTML = `<div class="flex items-center gap-4 w-full"><div id="detail-img-btn" class="w-20 h-20 shrink-0 bg-orange-100 rounded-full flex items-center justify-center border-4 border-orange-200 cursor-pointer"><img src="${cat.image}" class="w-16 h-16 object-contain pointer-events-none"></div><div class="text-left"><p class="font-black text-indigo-800 text-xl">${cat.name}</p><p class="text-sm text-gray-700 mt-2 font-medium">${cat.description}</p></div></div>`; document.getElementById('detail-img-btn').addEventListener('click', () => { document.getElementById('enlarged-image').src = cat.image; document.getElementById('image-modal').classList.remove('hidden'); document.getElementById('image-modal').classList.add('flex'); }); } else document.getElementById('cat-detail').innerHTML = `<div class="flex items-center gap-4 w-full"><div class="w-20 h-20 shrink-0 bg-gray-200 rounded-full flex items-center justify-center text-3xl text-gray-400 font-black border-4 border-gray-300">？</div><div class="text-left"><p class="font-black text-gray-500 text-xl">？？？</p><p class="text-sm text-gray-500 mt-2 font-medium">まだであっていないニャ</p></div></div>`; }); zl.appendChild(el); } document.getElementById('zukan-modal').classList.add('show'); });
         document.getElementById('close-zukan').addEventListener('click', () => document.getElementById('zukan-modal').classList.remove('show'));
         document.getElementById('close-image-modal').addEventListener('click', () => { document.getElementById('image-modal').classList.add('hidden'); document.getElementById('image-modal').classList.remove('flex'); });
 
         let html5QrCode = null;
-        document.getElementById('open-qr-btn').addEventListener('click', () => {
-            document.getElementById('qr-modal').classList.remove('hidden'); document.getElementById('qr-modal').classList.add('flex'); html5QrCode = new Html5Qrcode("qr-reader");
-            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, (dec) => { if(CAT_DATA[dec]) { html5QrCode.stop().then(() => { document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); addToZukan(dec); catVoice.currentTime = 0; catVoice.play().catch(()=>{}); showCustomAlert('🎉 シークレット発見！', `「${CAT_DATA[dec].name}」をゲットしたニャ！`); }); } }, (err) => {}).catch(err => { showCustomAlert('エラー', 'カメラの起動に失敗しました。'); document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); });
-        });
+        document.getElementById('open-qr-btn').addEventListener('click', () => { document.getElementById('qr-modal').classList.remove('hidden'); document.getElementById('qr-modal').classList.add('flex'); html5QrCode = new Html5Qrcode("qr-reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, (dec) => { if(CAT_DATA[dec]) { html5QrCode.stop().then(() => { document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); addToZukan(dec); catVoice.currentTime = 0; catVoice.play().catch(()=>{}); showCustomAlert('🎉 シークレット発見！', `「${CAT_DATA[dec].name}」をゲットしたニャ！`); }); } }, (err) => {}).catch(err => { showCustomAlert('エラー', 'カメラの起動に失敗しました。'); document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); }); });
         document.getElementById('close-qr-btn').addEventListener('click', () => { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); }); });
 
-        const arModal = document.getElementById('ar-modal'), arVideo = document.getElementById('ar-video'), arCatImg = document.getElementById('ar-cat-img'), arCatSelector = document.getElementById('ar-cat-selector'), arUiLayer = document.getElementById('ar-ui-layer');
-        let arStream = null;
-
-        document.getElementById('open-ar-btn').addEventListener('click', () => {
-            arModal.classList.remove('hidden'); arModal.classList.add('flex'); arCatImg.classList.add('hidden'); arCatSelector.innerHTML = '';
-            zukanData.forEach(catId => {
-                if(CAT_DATA[catId]) {
-                    const btn = document.createElement('img'); btn.src = CAT_DATA[catId].image; btn.className = "w-16 h-16 object-contain bg-white rounded-full border-2 border-pink-300 shadow-md flex-shrink-0 active:scale-95";
-                    btn.addEventListener('click', () => { arCatImg.src = CAT_DATA[catId].image; arCatImg.classList.remove('hidden'); arCatImg.style.top = '50%'; arCatImg.style.left = '50%'; }); arCatSelector.appendChild(btn);
-                }
-            });
-            if (arCatSelector.innerHTML === '') arCatSelector.innerHTML = '<p class="text-white text-sm p-2">まずは島を歩いてねこを見つけてニャ！</p>';
-            
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1920 } } })
-            .then(stream => { arStream = stream; arVideo.srcObject = stream; })
-            .catch(err => { showCustomAlert('エラー', 'カメラの使用が許可されていません。'); });
-        });
-
+        const arModal = document.getElementById('ar-modal'), arVideo = document.getElementById('ar-video'), arCatImg = document.getElementById('ar-cat-img'), arCatSelector = document.getElementById('ar-cat-selector'), arUiLayer = document.getElementById('ar-ui-layer'); let arStream = null;
+        document.getElementById('open-ar-btn').addEventListener('click', () => { arModal.classList.remove('hidden'); arModal.classList.add('flex'); arCatImg.classList.add('hidden'); arCatSelector.innerHTML = ''; zukanData.forEach(catId => { if(CAT_DATA[catId]) { const btn = document.createElement('img'); btn.src = CAT_DATA[catId].image; btn.className = "w-16 h-16 object-contain bg-white rounded-full border-2 border-pink-300 shadow-md flex-shrink-0 active:scale-95"; btn.addEventListener('click', () => { arCatImg.src = CAT_DATA[catId].image; arCatImg.classList.remove('hidden'); arCatImg.style.top = '50%'; arCatImg.style.left = '50%'; }); arCatSelector.appendChild(btn); } }); if (arCatSelector.innerHTML === '') arCatSelector.innerHTML = '<p class="text-white text-sm p-2">まずは島を歩いてねこを見つけてニャ！</p>'; navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1920 } } }).then(stream => { arStream = stream; arVideo.srcObject = stream; }).catch(err => { showCustomAlert('エラー', 'カメラの使用が許可されていません。'); }); });
         document.getElementById('close-ar-btn').addEventListener('click', () => { if(arStream) arStream.getTracks().forEach(t => t.stop()); arModal.classList.add('hidden'); arModal.classList.remove('flex'); });
-
-        let isDragging = false, startX, startY, initialTop, initialLeft;
-        arCatImg.addEventListener('touchstart', (e) => { isDragging = true; startX = e.touches[0].clientX; startY = e.touches[0].clientY; const rect = arCatImg.getBoundingClientRect(); initialLeft = rect.left + rect.width / 2; initialTop = rect.top + rect.height / 2; });
-        arCatImg.addEventListener('touchmove', (e) => { if(!isDragging) return; e.preventDefault(); arCatImg.style.left = `${initialLeft + (e.touches[0].clientX - startX)}px`; arCatImg.style.top = `${initialTop + (e.touches[0].clientY - startY)}px`; });
-        arCatImg.addEventListener('touchend', () => { isDragging = false; });
-
-        document.getElementById('ar-shutter-btn').addEventListener('click', () => {
-            const flash = document.createElement('div'); flash.className = "fixed inset-0 bg-white z-[9999] transition-opacity duration-300 pointer-events-none"; document.body.appendChild(flash);
-            setTimeout(() => flash.classList.add('opacity-0'), 50); setTimeout(() => flash.remove(), 350);
-
-            const dpr = window.devicePixelRatio || 2;
-            const canvas = document.createElement('canvas'); 
-            canvas.width = window.innerWidth * dpr; 
-            canvas.height = window.innerHeight * dpr; 
-            const ctx = canvas.getContext('2d');
-            ctx.scale(dpr, dpr); 
-
-            const videoRatio = arVideo.videoWidth / arVideo.videoHeight;
-            const screenRatio = window.innerWidth / window.innerHeight;
-            let drawW = window.innerWidth, drawH = window.innerHeight, offsetX = 0, offsetY = 0;
-            if (videoRatio > screenRatio) { drawW = window.innerHeight * videoRatio; offsetX = (window.innerWidth - drawW) / 2; } 
-            else { drawH = window.innerWidth / videoRatio; offsetY = (window.innerHeight - drawH) / 2; }
-            
-            ctx.drawImage(arVideo, offsetX, offsetY, drawW, drawH);
-            
-            if (!arCatImg.classList.contains('hidden')) { 
-                const catRect = arCatImg.getBoundingClientRect(); 
-                ctx.drawImage(arCatImg, catRect.left, catRect.top, catRect.width, catRect.height); 
-            }
-
-            const dataUrl = canvas.toDataURL('image/png');
-            document.getElementById('ar-result-img').src = dataUrl;
-            document.getElementById('ar-result-modal').classList.remove('hidden'); document.getElementById('ar-result-modal').classList.add('flex');
-        });
-
+        let isDragging = false, startX, startY, initialTop, initialLeft; arCatImg.addEventListener('touchstart', (e) => { isDragging = true; startX = e.touches[0].clientX; startY = e.touches[0].clientY; const rect = arCatImg.getBoundingClientRect(); initialLeft = rect.left + rect.width / 2; initialTop = rect.top + rect.height / 2; }); arCatImg.addEventListener('touchmove', (e) => { if(!isDragging) return; e.preventDefault(); arCatImg.style.left = `${initialLeft + (e.touches[0].clientX - startX)}px`; arCatImg.style.top = `${initialTop + (e.touches[0].clientY - startY)}px`; }); arCatImg.addEventListener('touchend', () => { isDragging = false; });
+        document.getElementById('ar-shutter-btn').addEventListener('click', () => { const flash = document.createElement('div'); flash.className = "fixed inset-0 bg-white z-[9999] transition-opacity duration-300 pointer-events-none"; document.body.appendChild(flash); setTimeout(() => flash.classList.add('opacity-0'), 50); setTimeout(() => flash.remove(), 350); const dpr = window.devicePixelRatio || 2; const canvas = document.createElement('canvas'); canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr); const videoRatio = arVideo.videoWidth / arVideo.videoHeight; const screenRatio = window.innerWidth / window.innerHeight; let drawW = window.innerWidth, drawH = window.innerHeight, offsetX = 0, offsetY = 0; if (videoRatio > screenRatio) { drawW = window.innerHeight * videoRatio; offsetX = (window.innerWidth - drawW) / 2; } else { drawH = window.innerWidth / videoRatio; offsetY = (window.innerHeight - drawH) / 2; } ctx.drawImage(arVideo, offsetX, offsetY, drawW, drawH); if (!arCatImg.classList.contains('hidden')) { const catRect = arCatImg.getBoundingClientRect(); ctx.drawImage(arCatImg, catRect.left, catRect.top, catRect.width, catRect.height); } const dataUrl = canvas.toDataURL('image/png'); document.getElementById('ar-result-img').src = dataUrl; document.getElementById('ar-result-modal').classList.remove('hidden'); document.getElementById('ar-result-modal').classList.add('flex'); });
         document.getElementById('close-ar-result-btn').addEventListener('click', () => { document.getElementById('ar-result-modal').classList.add('hidden'); document.getElementById('ar-result-modal').classList.remove('flex'); });
+        document.getElementById('download-ar-result-btn').addEventListener('click', () => { const dataUrl = document.getElementById('ar-result-img').src; const link = document.createElement('a'); link.download = `tobishima_${Date.now()}.png`; link.href = dataUrl; link.click(); });
 
-        document.getElementById('download-ar-result-btn').addEventListener('click', () => {
-            const dataUrl = document.getElementById('ar-result-img').src;
-            const link = document.createElement('a');
-            link.download = `tobishima_${Date.now()}.png`; 
-            link.href = dataUrl;
-            link.click(); 
+        // ==========================================
+        // 【追加】ミニゲーム（柑橘ソムリエ）の処理
+        // ==========================================
+        const MG_CITRUS_DATA = [
+            { id: "unnsyuu", name: "温州みかん", img: "./unnsyuu.png" },
+            { id: "hassaku", name: "はっさく", img: "./hassaku.png" },
+            { id: "setoka", name: "せとか", img: "./setoka.png" },
+            { id: "harumi", name: "はるみ", img: "./harumi.png" },
+            { id: "deco", name: "デコポン", img: "./deco.png" },
+            { id: "setouti", name: "瀬戸内レモン", img: "./setouti.png" }
+        ];
+
+        let mgTimer = null;
+        let mgSpawnTimer = null;
+        let mgTimeLeft = 30;
+        let mgScore = 0;
+        let mgCurrentTarget = null;
+        let isMgPlaying = false;
+
+        const mgScreen = document.getElementById('minigame-screen');
+        const mgOverlay = document.getElementById('mg-overlay');
+        const mgPlayArea = document.getElementById('mg-play-area');
+        
+        document.getElementById('open-minigame-btn').addEventListener('click', () => {
+            document.getElementById('map-screen').style.display = 'none';
+            mgScreen.classList.remove('hidden');
+            mgScreen.classList.add('flex');
+            
+            document.getElementById('mg-title').innerText = "ねこの柑橘ソムリエ";
+            document.getElementById('mg-desc').classList.remove('hidden');
+            document.getElementById('mg-result').classList.add('hidden');
+            document.getElementById('mg-start-btn').innerText = "スタート！";
+            mgOverlay.classList.remove('hidden');
         });
+
+        document.getElementById('mg-close-btn').addEventListener('click', () => {
+            endMiniGame(true); 
+            mgScreen.classList.add('hidden');
+            mgScreen.classList.remove('flex');
+            document.getElementById('map-screen').style.display = 'block';
+            map.invalidateSize();
+        });
+
+        document.getElementById('mg-start-btn').addEventListener('click', startMiniGame);
+
+        function startMiniGame() {
+            mgOverlay.classList.add('hidden');
+            mgPlayArea.innerHTML = '';
+            mgScore = 0;
+            mgTimeLeft = 30;
+            isMgPlaying = true;
+            
+            document.getElementById('mg-score').innerText = mgScore;
+            document.getElementById('mg-time').innerText = mgTimeLeft;
+            
+            // お題をランダムに決定
+            mgCurrentTarget = MG_CITRUS_DATA[Math.floor(Math.random() * MG_CITRUS_DATA.length)];
+            document.getElementById('mg-target-name').innerText = mgCurrentTarget.name;
+            
+            mgTimer = setInterval(() => {
+                mgTimeLeft--;
+                document.getElementById('mg-time').innerText = mgTimeLeft;
+                if(mgTimeLeft <= 0) endMiniGame(false);
+            }, 1000);
+            
+            mgSpawnTimer = setInterval(() => {
+                if(!isMgPlaying) return;
+                spawnFruit();
+            }, 500); // 0.5秒に1個降ってくる
+        }
+
+        function spawnFruit() {
+            const fruit = MG_CITRUS_DATA[Math.floor(Math.random() * MG_CITRUS_DATA.length)];
+            const img = document.createElement('img');
+            img.src = fruit.img;
+            img.className = 'fruit-item';
+            
+            // 画面の横幅10%〜80%のランダムな位置から降らせる
+            const startX = Math.random() * 70 + 10; 
+            img.style.left = `${startX}%`;
+            
+            // 落下速度（2秒〜4秒でランダム）
+            const duration = Math.random() * 2 + 2; 
+            img.style.animationDuration = `${duration}s`;
+            
+            img.addEventListener('click', (e) => {
+                if(!isMgPlaying) return;
+                
+                const popup = document.createElement('div');
+                popup.className = 'score-popup';
+                popup.style.left = `${e.clientX}px`;
+                popup.style.top = `${e.clientY}px`;
+                
+                if(fruit.id === mgCurrentTarget.id) {
+                    mgScore++;
+                    document.getElementById('mg-score').innerText = mgScore;
+                    popup.innerText = '+1';
+                    popup.style.color = '#16a34a'; // 緑色
+                    catVoice.currentTime = 0; catVoice.play().catch(()=>{});
+                } else {
+                    mgTimeLeft -= 2; // お手つきペナルティ（-2秒）
+                    if(mgTimeLeft < 0) mgTimeLeft = 0;
+                    document.getElementById('mg-time').innerText = mgTimeLeft;
+                    popup.innerText = '-2秒';
+                    popup.style.color = '#ef4444'; // 赤色
+                    catHungryVoice.currentTime = 0; catHungryVoice.play().catch(()=>{});
+                }
+                
+                mgScreen.appendChild(popup);
+                setTimeout(() => popup.remove(), 800);
+                img.remove();
+            });
+            
+            mgPlayArea.appendChild(img);
+            
+            setTimeout(() => { if(img.parentNode) img.remove(); }, duration * 1000);
+        }
+
+        function endMiniGame(isForceQuit) {
+            isMgPlaying = false;
+            clearInterval(mgTimer);
+            clearInterval(mgSpawnTimer);
+            
+            if(!isForceQuit) {
+                // スコア5点につき、エサ1個
+                const earnedFood = Math.floor(mgScore / 5);
+                foodCount += earnedFood;
+                localStorage.setItem('tobishima_food', foodCount);
+                document.getElementById('food-count').innerHTML = `${foodCount}`;
+                
+                document.getElementById('mg-title').innerText = "タイムアップ！";
+                document.getElementById('mg-desc').classList.add('hidden');
+                document.getElementById('mg-result').classList.remove('hidden');
+                document.getElementById('mg-result-score').innerText = mgScore;
+                document.getElementById('mg-result-food').innerText = earnedFood;
+                document.getElementById('mg-start-btn').innerText = "もう一度！";
+                mgOverlay.classList.remove('hidden');
+            }
+        }
     </script>
 </body>
 </html>
