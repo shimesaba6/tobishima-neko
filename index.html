@@ -39,11 +39,14 @@
         body.is-raining .rain-layer { display: block; }
         @keyframes rainFall { 0% { background-position: 0 0; } 100% { background-position: -15px 80px; } }
 
-        /* ミニゲーム用CSS */
-        @keyframes fruitFall { 0% { top: -100px; transform: rotate(0deg); } 100% { top: 110dvh; transform: rotate(360deg); } }
-        .fruit-item { position: absolute; width: 70px; height: 70px; object-fit: contain; filter: drop-shadow(0 6px 6px rgba(0,0,0,0.4)); cursor: pointer; animation: fruitFall 3s linear forwards; pointer-events: auto; }
-        .score-popup { position: absolute; font-weight: black; font-size: 28px; animation: floatUp 0.8s ease-out forwards; pointer-events: none; text-shadow: 0 2px 4px rgba(255,255,255,0.8); z-index: 2500; }
-        @keyframes floatUp { 0% { opacity: 1; transform: translate(-50%, -50%); } 100% { opacity: 0; transform: translate(-50%, -100px); } }
+        /* ミニゲーム（神経衰弱）用CSS */
+        .mg-card { perspective: 1000px; cursor: pointer; position: relative; aspect-ratio: 1/1; }
+        .mg-card-inner { position: absolute; width: 100%; height: 100%; transition: transform 0.4s; transform-style: preserve-3d; }
+        .mg-card.flipped .mg-card-inner { transform: rotateY(180deg); }
+        .mg-card-front, .mg-card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 2px solid #fb923c; }
+        .mg-card-front { background-color: #fff; transform: rotateY(180deg); }
+        .mg-card-back { background-color: #ffedd5; background-image: radial-gradient(#fdba74 20%, transparent 20%); background-size: 10px 10px; }
+        .mg-fruit-img { width: 80%; height: 80%; object-fit: contain; }
     </style>
 </head>
 <body class="w-screen relative" style="height: 100dvh;">
@@ -76,14 +79,12 @@
         </div>
 
         <div class="ui-layer bottom-0 left-0 w-full p-3 pb-6 flex justify-between items-end gap-2">
-            <!-- 左側UI（ミニゲームボタン追加） -->
             <div class="flex flex-col gap-3">
                 <button id="go-garden-btn" class="bg-green-500 text-white w-14 h-14 rounded-full text-2xl shadow-lg interactive border-4 border-white">🏡</button>
                 <button id="open-ar-btn" class="bg-pink-400 text-white w-14 h-14 rounded-full text-2xl shadow-lg interactive border-4 border-white">✨</button>
                 <button id="open-minigame-btn" class="bg-orange-400 text-white w-14 h-14 rounded-full text-2xl shadow-lg interactive border-4 border-white transition-transform active:scale-95">🍊</button>
             </div>
             
-            <!-- 中央UI -->
             <div class="bg-white/95 backdrop-blur-md px-2 py-2 rounded-3xl shadow-lg flex flex-1 flex-col items-center justify-center interactive border-2 border-orange-200 max-w-[140px]">
                 <div class="flex items-center justify-center gap-1 mb-1 w-full">
                     <div class="w-8 h-8 shrink-0 bg-orange-100 rounded-full flex items-center justify-center text-lg shadow-inner">🐟</div>
@@ -98,7 +99,6 @@
                 </div>
             </div>
 
-            <!-- 右側UI -->
             <div class="flex flex-col gap-3">
                 <button id="open-qr-btn" class="bg-yellow-400 text-white w-14 h-14 rounded-full text-2xl shadow-lg interactive border-4 border-white">📷</button>
                 <button id="open-zukan" class="bg-indigo-500 text-white w-14 h-14 rounded-full text-2xl shadow-lg interactive border-4 border-white">📖</button>
@@ -118,7 +118,7 @@
         <div id="garden-container" class="w-full h-full relative"></div>
     </div>
     
-    <!-- モーダル群（図鑑・写真など） -->
+    <!-- モーダル群 -->
     <div id="zukan-modal" class="fixed inset-0 bg-black/60 z-[3000] items-center justify-center p-4 backdrop-blur-sm"><div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl relative interactive border-4 border-indigo-200 flex flex-col max-h-[90dvh]"><h2 class="text-2xl font-black text-center text-indigo-800 mb-1">ねこ図鑑</h2><p class="text-center text-[11px] text-orange-600 font-bold mb-4">※まるい画像をタップで拡大</p><div id="cat-detail" class="bg-white rounded-2xl p-4 mb-4 min-h-[100px] flex items-center justify-center text-center shadow-inner border border-gray-200 shrink-0"><p class="text-gray-500 font-bold">ねこをタップするニャ</p></div><div class="grid grid-cols-3 gap-3 overflow-y-auto p-1 flex-1" id="zukan-list"></div><div class="mt-6 text-center shrink-0"><button id="close-zukan" class="bg-gray-300 px-10 py-4 rounded-full font-bold text-lg shadow-sm">とじる</button><p id="open-reset-btn" class="text-[11px] text-gray-400 font-bold mt-4 underline cursor-pointer p-2">データを初期化する</p></div></div></div>
     <div id="image-modal" class="fixed inset-0 bg-black/80 z-[5000] hidden flex-col items-center justify-center p-4 interactive"><div class="w-full max-w-md flex justify-end mb-2 pr-4"><button id="close-image-modal" class="text-white text-5xl font-bold">&times;</button></div><img id="enlarged-image" src="" class="w-[90%] max-w-[300px] object-contain filter drop-shadow-lg"></div>
     <div id="qr-modal" class="fixed inset-0 bg-black/90 z-[6000] hidden flex-col items-center justify-center p-4 interactive"><h2 class="text-white text-xl font-bold mb-4">シークレットQRを探せ！</h2><div id="qr-reader" class="w-full max-w-sm bg-white rounded-xl overflow-hidden mb-6"></div><button id="close-qr-btn" class="bg-red-500 text-white px-8 py-3 rounded-full font-bold text-lg">やめる</button></div>
@@ -139,7 +139,7 @@
         </div>
     </div>
 
-    <!-- AR撮影結果画面 -->
+    <!-- AR撮影結果 -->
     <div id="ar-result-modal" class="fixed inset-0 bg-black/95 z-[9000] hidden flex-col items-center justify-center p-4 interactive">
         <p class="text-white font-bold mb-4">きれいに撮れたニャ！</p>
         <img id="ar-result-img" src="" class="w-full max-w-sm rounded-lg shadow-2xl mb-8 border-4 border-white object-contain max-h-[60dvh]">
@@ -150,45 +150,48 @@
     </div>
 
     <!-- ================================================== -->
-    <!-- 【追加】ミニゲーム画面（ねこの柑橘ソムリエ） -->
+    <!-- 【変更】ミニゲーム画面（ねこの柑橘神経衰弱） -->
     <!-- ================================================== -->
-    <div id="minigame-screen" class="hidden absolute inset-0 z-[2000] bg-orange-50 flex-col overflow-hidden interactive">
-        
-        <!-- ヘッダー（お題・時間・スコア） -->
-        <div class="absolute top-0 left-0 w-full px-6 py-4 flex justify-between items-center z-10 bg-white/90 backdrop-blur-md shadow-sm">
+    <div id="minigame-screen" class="hidden absolute inset-0 z-[2000] bg-[#fdf6e3] flex-col overflow-hidden interactive">
+        <!-- ヘッダー -->
+        <div class="w-full px-6 py-4 flex justify-between items-center bg-white/90 backdrop-blur-md shadow-sm shrink-0">
             <div class="text-left w-1/3">
-                <p class="text-[10px] font-bold text-gray-500 mb-1">お題の柑橘</p>
-                <p id="mg-target-name" class="text-lg font-black text-orange-600 leading-none">準備中...</p>
+                <p class="text-[10px] font-bold text-gray-500 mb-1">おとも猫</p>
+                <div id="mg-otomo-icon" class="w-10 h-10 bg-orange-100 rounded-full border-2 border-orange-300 overflow-hidden flex items-center justify-center">
+                    <img src="" id="mg-otomo-img" class="w-8 h-8 object-contain">
+                </div>
             </div>
             <div class="text-center w-1/3 border-x-2 border-orange-100">
                 <p class="text-[10px] font-bold text-gray-500 mb-1">残り時間</p>
-                <p id="mg-time" class="text-3xl font-black text-red-500 leading-none">30</p>
+                <p id="mg-time" class="text-3xl font-black text-red-500 leading-none">40</p>
             </div>
             <div class="text-right w-1/3">
-                <p class="text-[10px] font-bold text-gray-500 mb-1">収穫数</p>
+                <p class="text-[10px] font-bold text-gray-500 mb-1">ペア数</p>
                 <p id="mg-score" class="text-3xl font-black text-green-600 leading-none">0</p>
             </div>
         </div>
 
-        <!-- みかんが降ってくるエリア -->
-        <div id="mg-play-area" class="w-full h-full relative overflow-hidden pointer-events-none"></div>
+        <!-- 盤面（4列×2行のカード） -->
+        <div class="flex-1 w-full flex items-center justify-center p-4 relative">
+            <div id="mg-board" class="w-full max-w-sm grid grid-cols-4 gap-2">
+                <!-- JSでカードを生成します -->
+            </div>
+        </div>
 
         <!-- ゲーム開始・終了時のオーバーレイ -->
-        <div id="mg-overlay" class="absolute inset-0 bg-black/70 flex items-center justify-center z-20">
+        <div id="mg-overlay" class="absolute inset-0 bg-black/70 flex items-center justify-center z-[2100]">
             <div class="bg-white p-6 rounded-3xl text-center shadow-2xl border-4 border-orange-400 max-w-[320px] w-[90%]">
-                <h2 id="mg-title" class="text-2xl font-black text-orange-600 mb-4">ねこの柑橘ソムリエ</h2>
+                <h2 id="mg-title" class="text-2xl font-black text-orange-600 mb-4">柑橘・神経衰弱</h2>
                 <p id="mg-desc" class="font-bold text-gray-600 text-[13px] mb-6 leading-relaxed">
-                    上から降ってくる多種多様な柑橘の中から<br><span class="text-orange-600 font-black">【お題と同じもの】</span>だけをタップで収穫！<br>間違えると時間が2秒減るニャ。
+                    同じ種類の柑橘を２枚めくってペアを作ろう！<br>間違えすぎると、おとも猫がヒントをくれるかも…？
                 </p>
-                
                 <div id="mg-result" class="hidden mb-6 bg-orange-50 rounded-xl p-4 border border-orange-200">
-                    <p class="text-sm font-bold text-gray-600 mb-2">今回の収穫</p>
-                    <p class="text-3xl font-black text-green-600 mb-2"><span id="mg-result-score">0</span> <span class="text-sm text-gray-800">個</span></p>
+                    <p class="text-sm font-bold text-gray-600 mb-2">見つけたペア</p>
+                    <p class="text-3xl font-black text-green-600 mb-2"><span id="mg-result-score">0</span> <span class="text-sm text-gray-800">ペア</span></p>
                     <hr class="border-orange-200 my-2">
-                    <p class="text-[11px] font-bold text-gray-500">※5個収穫でエサ1個と交換</p>
+                    <p class="text-[11px] font-bold text-gray-500">※5ペアでエサ1個と交換</p>
                     <p class="text-lg font-bold text-orange-700 mt-1">エサを <span id="mg-result-food" class="text-3xl font-black">0</span> 個ゲット！</p>
                 </div>
-
                 <div class="flex gap-3 justify-center">
                     <button id="mg-close-btn" class="bg-gray-400 text-white px-6 py-3 rounded-full font-bold shadow-md active:scale-95">もどる</button>
                     <button id="mg-start-btn" class="bg-orange-500 text-white px-8 py-3 rounded-full font-bold shadow-md active:scale-95">スタート！</button>
@@ -491,7 +494,7 @@
         document.getElementById('download-ar-result-btn').addEventListener('click', () => { const dataUrl = document.getElementById('ar-result-img').src; const link = document.createElement('a'); link.download = `tobishima_${Date.now()}.png`; link.href = dataUrl; link.click(); });
 
         // ==========================================
-        // 【追加】ミニゲーム（柑橘ソムリエ）の処理
+        // 【追加】ミニゲーム（柑橘・神経衰弱）の処理
         // ==========================================
         const MG_CITRUS_DATA = [
             { id: "unnsyuu", name: "温州みかん", img: "./unnsyuu.png" },
@@ -503,22 +506,37 @@
         ];
 
         let mgTimer = null;
-        let mgSpawnTimer = null;
-        let mgTimeLeft = 30;
-        let mgScore = 0;
-        let mgCurrentTarget = null;
+        let mgTimeLeft = 40;
+        let mgScore = 0; // ペアを作った回数
         let isMgPlaying = false;
+        
+        let mgCards = [];
+        let mgFlippedCards = [];
+        let mgMatchedPairsInBoard = 0;
+        let mgMissCount = 0; // 【ヒント用】ミスの回数
 
         const mgScreen = document.getElementById('minigame-screen');
         const mgOverlay = document.getElementById('mg-overlay');
-        const mgPlayArea = document.getElementById('mg-play-area');
+        const mgBoard = document.getElementById('mg-board');
         
+        // ヘッダーにおとも猫（いなければ料理猫）の画像を設定する関数
+        function setOtomoIcon() {
+            let helperImg = "./haruneko.png"; // デフォルト
+            if (activeOtomoId && CAT_DATA[activeOtomoId]) {
+                helperImg = CAT_DATA[activeOtomoId].image;
+            }
+            document.getElementById('mg-otomo-img').src = helperImg;
+            return helperImg;
+        }
+
         document.getElementById('open-minigame-btn').addEventListener('click', () => {
             document.getElementById('map-screen').style.display = 'none';
             mgScreen.classList.remove('hidden');
             mgScreen.classList.add('flex');
             
-            document.getElementById('mg-title').innerText = "ねこの柑橘ソムリエ";
+            setOtomoIcon();
+            
+            document.getElementById('mg-title').innerText = "柑橘・神経衰弱";
             document.getElementById('mg-desc').classList.remove('hidden');
             document.getElementById('mg-result').classList.add('hidden');
             document.getElementById('mg-start-btn').innerText = "スタート！";
@@ -537,84 +555,142 @@
 
         function startMiniGame() {
             mgOverlay.classList.add('hidden');
-            mgPlayArea.innerHTML = '';
             mgScore = 0;
-            mgTimeLeft = 30;
+            mgTimeLeft = 40;
             isMgPlaying = true;
-            
             document.getElementById('mg-score').innerText = mgScore;
             document.getElementById('mg-time').innerText = mgTimeLeft;
             
-            // お題をランダムに決定
-            mgCurrentTarget = MG_CITRUS_DATA[Math.floor(Math.random() * MG_CITRUS_DATA.length)];
-            document.getElementById('mg-target-name').innerText = mgCurrentTarget.name;
+            generateCards();
             
             mgTimer = setInterval(() => {
                 mgTimeLeft--;
                 document.getElementById('mg-time').innerText = mgTimeLeft;
                 if(mgTimeLeft <= 0) endMiniGame(false);
             }, 1000);
-            
-            mgSpawnTimer = setInterval(() => {
-                if(!isMgPlaying) return;
-                spawnFruit();
-            }, 500); // 0.5秒に1個降ってくる
         }
 
-        function spawnFruit() {
-            const fruit = MG_CITRUS_DATA[Math.floor(Math.random() * MG_CITRUS_DATA.length)];
-            const img = document.createElement('img');
-            img.src = fruit.img;
-            img.className = 'fruit-item';
-            
-            // 画面の横幅10%〜80%のランダムな位置から降らせる
-            const startX = Math.random() * 70 + 10; 
-            img.style.left = `${startX}%`;
-            
-            // 落下速度（2秒〜4秒でランダム）
-            const duration = Math.random() * 2 + 2; 
-            img.style.animationDuration = `${duration}s`;
-            
-            img.addEventListener('click', (e) => {
-                if(!isMgPlaying) return;
+        // カードを8枚（4ペア）生成して盤面に並べる
+        function generateCards() {
+            mgBoard.innerHTML = '';
+            mgCards = [];
+            mgFlippedCards = [];
+            mgMatchedPairsInBoard = 0;
+            mgMissCount = 0; // 盤面リセットでミス回数もリセット
+
+            // 全6種類からランダムに4種類を選ぶ
+            let shuffledTypes = [...MG_CITRUS_DATA].sort(() => 0.5 - Math.random());
+            let selectedTypes = shuffledTypes.slice(0, 4);
+
+            // 4種類 × 各2枚 ＝ 8枚の配列を作る
+            let cardDeck = [...selectedTypes, ...selectedTypes];
+            // カードをシャッフル
+            cardDeck.sort(() => 0.5 - Math.random());
+
+            cardDeck.forEach((fruit, index) => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'mg-card';
+                cardEl.dataset.id = fruit.id;
+                cardEl.dataset.index = index;
+
+                cardEl.innerHTML = `
+                    <div class="mg-card-inner">
+                        <div class="mg-card-back">
+                            <span class="text-orange-400 font-bold text-2xl">？</span>
+                        </div>
+                        <div class="mg-card-front">
+                            <img src="${fruit.img}" class="mg-fruit-img">
+                        </div>
+                    </div>
+                `;
                 
-                const popup = document.createElement('div');
-                popup.className = 'score-popup';
-                popup.style.left = `${e.clientX}px`;
-                popup.style.top = `${e.clientY}px`;
-                
-                if(fruit.id === mgCurrentTarget.id) {
+                cardEl.addEventListener('click', () => handleCardClick(cardEl));
+                mgBoard.appendChild(cardEl);
+                mgCards.push({ el: cardEl, id: fruit.id, matched: false });
+            });
+        }
+
+        // カードをクリックした時の処理
+        function handleCardClick(clickedEl) {
+            if (!isMgPlaying) return;
+            if (clickedEl.classList.contains('flipped')) return; // すでに表なら無視
+            if (mgFlippedCards.length >= 2) return; // 2枚めくっている最中なら無視
+
+            catVoice.currentTime = 0; catVoice.play().catch(()=>{});
+            clickedEl.classList.add('flipped');
+            mgFlippedCards.push(clickedEl);
+
+            // 1枚目をめくった直後の処理（ヒント機能）
+            if (mgFlippedCards.length === 1) {
+                // 3回以上ミスしていて、まだペアになっていない場合
+                if (mgMissCount >= 3) {
+                    const targetId = clickedEl.dataset.id;
+                    // まだ表になっていない、同じ種類のカードを探す
+                    const hintCardObj = mgCards.find(c => c.id === targetId && !c.matched && c.el !== clickedEl);
+                    
+                    if (hintCardObj) {
+                        // ヒント表示用の要素を作成して被せる
+                        const helperImg = setOtomoIcon();
+                        const hintEl = document.createElement('div');
+                        hintEl.className = 'absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none hint-overlay';
+                        hintEl.innerHTML = `
+                            <div class="bg-white px-2 py-1 rounded-full shadow-md border border-orange-200 mb-1 animate-bounce">
+                                <p class="text-[10px] font-bold text-orange-600 whitespace-nowrap">良い匂いがするニャ！</p>
+                            </div>
+                            <img src="${helperImg}" class="w-10 h-10 object-contain drop-shadow-md">
+                        `;
+                        hintCardObj.el.appendChild(hintEl);
+                    }
+                }
+            }
+
+            // 2枚めくった時の処理
+            if (mgFlippedCards.length === 2) {
+                // 出ているヒント（hint-overlay）があれば全て消す
+                document.querySelectorAll('.hint-overlay').forEach(el => el.remove());
+
+                const card1 = mgFlippedCards[0];
+                const card2 = mgFlippedCards[1];
+
+                if (card1.dataset.id === card2.dataset.id) {
+                    // ペア正解！
+                    mgMatchedPairsInBoard++;
                     mgScore++;
                     document.getElementById('mg-score').innerText = mgScore;
-                    popup.innerText = '+1';
-                    popup.style.color = '#16a34a'; // 緑色
-                    catVoice.currentTime = 0; catVoice.play().catch(()=>{});
+                    
+                    // matchedフラグを立てる
+                    mgCards.find(c => c.el === card1).matched = true;
+                    mgCards.find(c => c.el === card2).matched = true;
+
+                    mgFlippedCards = [];
+
+                    // 盤面を全クリア（4ペア）したら、新しいカードを配る
+                    if (mgMatchedPairsInBoard === 4) {
+                        setTimeout(() => {
+                            if(isMgPlaying) generateCards();
+                        }, 800);
+                    }
                 } else {
-                    mgTimeLeft -= 2; // お手つきペナルティ（-2秒）
-                    if(mgTimeLeft < 0) mgTimeLeft = 0;
-                    document.getElementById('mg-time').innerText = mgTimeLeft;
-                    popup.innerText = '-2秒';
-                    popup.style.color = '#ef4444'; // 赤色
+                    // ハズレ
+                    mgMissCount++; // ミス回数をカウントアップ
                     catHungryVoice.currentTime = 0; catHungryVoice.play().catch(()=>{});
+                    
+                    // 0.8秒後に裏に戻す
+                    setTimeout(() => {
+                        card1.classList.remove('flipped');
+                        card2.classList.remove('flipped');
+                        mgFlippedCards = [];
+                    }, 800);
                 }
-                
-                mgScreen.appendChild(popup);
-                setTimeout(() => popup.remove(), 800);
-                img.remove();
-            });
-            
-            mgPlayArea.appendChild(img);
-            
-            setTimeout(() => { if(img.parentNode) img.remove(); }, duration * 1000);
+            }
         }
 
         function endMiniGame(isForceQuit) {
             isMgPlaying = false;
             clearInterval(mgTimer);
-            clearInterval(mgSpawnTimer);
             
             if(!isForceQuit) {
-                // スコア5点につき、エサ1個
+                // 5ペア見つけるごとにエサ1個
                 const earnedFood = Math.floor(mgScore / 5);
                 foodCount += earnedFood;
                 localStorage.setItem('tobishima_food', foodCount);
