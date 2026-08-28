@@ -18,7 +18,6 @@
         
         #garden-screen { display: none; position: absolute; inset: 0; z-index: 1500; background-image: url('./garden.png'); background-size: cover; background-position: center; overflow: hidden; }
         
-        /* 庭の猫の動きのトランジションはJS側で動的に変更します */
         .garden-cat { position: absolute; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)); cursor: pointer; }
 
         .custom-popup .leaflet-popup-content-wrapper { background-color: #ffe8d6; color: #333; border-radius: 12px; font-weight: bold; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); border: 2px solid #fb923c; }
@@ -103,12 +102,10 @@
         <div class="absolute top-8 left-4 z-10">
             <button id="back-map-btn" class="bg-white/95 text-gray-800 px-6 py-3 rounded-full font-bold text-lg shadow-md border-2 border-gray-200 interactive">◀ マップ</button>
         </div>
-        <!-- 【追加】遊ぶボタン -->
         <div class="absolute top-8 right-4 z-10">
             <button id="toy-btn" class="bg-yellow-400 text-gray-800 px-6 py-3 rounded-full font-bold text-lg shadow-md border-2 border-white interactive transition-colors">🧶 あそぶ</button>
         </div>
         
-        <!-- 【追加】指に追従するおもちゃのアイコン -->
         <div id="toy-icon" class="absolute hidden text-5xl pointer-events-none z-[1600] drop-shadow-lg" style="transform: translate(-50%, -50%); transition: none;">🧶</div>
 
         <div id="garden-container" class="w-full h-full relative"></div>
@@ -165,19 +162,35 @@
             { id: "okitomo", name: "沖友天満宮", lat: 34.1750, lng: 132.8600, radius: 30, timeReq: 3 * 60, catId: "stay_okitomo" }
         ];
 
+        // おとものヒントやセリフのリスト
+        const OTOMO_COMMENTS = [
+            "足元にすりすりしてきた！",
+            "道端のにおいをクンクン嗅いでいる。",
+            "何かを見つけたのか、耳をピクピクさせている。",
+            "潮風にあたって気持ちよさそうだ。",
+            "「まめな食堂で15分くらい休憩すると、ごちそうがもらえるらしいニャ」",
+            "「沖友天満宮で3分待ってると、お祭りの音がするってウワサだニャ」",
+            "「夕方の海沿いって、なんだかノスタルジックな猫がいそうだニャ…」",
+            "「雨の日しか水遊びしない変わったヤツもいるらしいニャ」",
+            "「ここは景色がいいニャ〜。歩くの楽しいニャ！」"
+        ];
+
         let currentIslandKey = null, isCatSpawned = false, foodCount = 3;
         let zukanData = JSON.parse(localStorage.getItem('tobishima_zukan')) || [];
+        
+        let activeOtomoId = localStorage.getItem('tobishima_otomo') || null;
+        let otomoMarker = null;
+
         let lastLatLng = null, distanceWalked = 0, gpsWatchId = null, isTracking = true;
         let currentWeatherState = 'clear', currentTimeState = 'day', lastWeatherCheck = 0;
         let activeStaySpot = null, stayStartTime = 0, stayTimerInterval = null;
         const DISTANCE_TO_FOOD = 50; 
+        
         const catVoice = new Audio('./catvoice.mp3');
+        const catHungryVoice = new Audio('./cat_hungry.mp3'); 
 
-        // ==========================================
-        // 【追加】遊びモードのステータス管理
-        // ==========================================
         let isToyActive = false;
-        let toyPos = null; // おもちゃの現在地 {x: %, y: %}
+        let toyPos = null; 
         const toyBtn = document.getElementById('toy-btn');
         const toyIcon = document.getElementById('toy-icon');
         const gardenScreen = document.getElementById('garden-screen');
@@ -197,26 +210,21 @@
             }
         });
 
-        // 画面をなぞった時におもちゃの位置を更新する関数
         function updateToyPosition(x, y) {
             if (!isToyActive) return;
             toyIcon.classList.remove('hidden');
             const rect = gardenScreen.getBoundingClientRect();
-            // ピクセル座標を%（パーセント）に変換
             const leftPct = (x / rect.width) * 100;
             const topPct = (y / rect.height) * 100;
             toyIcon.style.left = `${leftPct}%`;
             toyIcon.style.top = `${topPct}%`;
             toyPos = { x: leftPct, y: topPct };
         }
-
-        // スマホのスワイプ＆PCのマウス移動対応
         gardenScreen.addEventListener('mousemove', (e) => updateToyPosition(e.clientX, e.clientY));
         gardenScreen.addEventListener('touchmove', (e) => {
-            if (isToyActive) e.preventDefault(); // おもちゃを動かしている時に画面がスクロールしないようにブロック
+            if (isToyActive) e.preventDefault(); 
             updateToyPosition(e.touches[0].clientX, e.touches[0].clientY);
         }, { passive: false });
-
 
         const customAlertModal = document.getElementById('custom-alert-modal'), customAlertTitle = document.getElementById('custom-alert-title'), customAlertMessage = document.getElementById('custom-alert-message');
         function showCustomAlert(title, message) { customAlertTitle.innerHTML = title; customAlertMessage.innerHTML = message; customAlertModal.classList.remove('hidden'); customAlertModal.classList.add('flex'); }
@@ -225,7 +233,7 @@
         document.getElementById('open-reset-btn').addEventListener('click', () => { document.getElementById('reset-checkbox').checked = false; let btn = document.getElementById('execute-reset-btn'); btn.disabled = true; btn.className = "flex-1 bg-gray-400 text-white py-3 rounded-full font-bold pointer-events-none"; document.getElementById('reset-confirm-modal').classList.remove('hidden'); document.getElementById('reset-confirm-modal').classList.add('flex'); });
         document.getElementById('cancel-reset-btn').addEventListener('click', () => { document.getElementById('reset-confirm-modal').classList.add('hidden'); document.getElementById('reset-confirm-modal').classList.remove('flex'); });
         document.getElementById('reset-checkbox').addEventListener('change', (e) => { let btn = document.getElementById('execute-reset-btn'); if (e.target.checked) { btn.disabled = false; btn.className = "flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-full font-bold"; } else { btn.disabled = true; btn.className = "flex-1 bg-gray-400 text-white py-3 rounded-full font-bold pointer-events-none"; } });
-        document.getElementById('execute-reset-btn').addEventListener('click', () => { localStorage.removeItem('tobishima_zukan'); zukanData = []; foodCount = 3; distanceWalked = 0; document.getElementById('food-count').innerHTML = `3`; document.getElementById('distance-progress').innerText = `あと ${DISTANCE_TO_FOOD}m`; document.getElementById('distance-bar').style.width = `0%`; document.getElementById('reset-confirm-modal').classList.add('hidden'); document.getElementById('reset-confirm-modal').classList.remove('flex'); document.getElementById('zukan-modal').classList.remove('show'); showCustomAlert('データ初期化完了', '図鑑とエサのデータをリセットしました。'); });
+        document.getElementById('execute-reset-btn').addEventListener('click', () => { localStorage.removeItem('tobishima_zukan'); localStorage.removeItem('tobishima_otomo'); zukanData = []; activeOtomoId = null; foodCount = 3; distanceWalked = 0; document.getElementById('food-count').innerHTML = `3`; document.getElementById('distance-progress').innerText = `あと ${DISTANCE_TO_FOOD}m`; document.getElementById('distance-bar').style.width = `0%`; document.getElementById('reset-confirm-modal').classList.add('hidden'); document.getElementById('reset-confirm-modal').classList.remove('flex'); document.getElementById('zukan-modal').classList.remove('show'); showCustomAlert('データ初期化完了', '図鑑とエサのデータをリセットしました。'); });
 
         const map = L.map('map', { zoomControl: false }).setView([35.681236, 139.767125], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
@@ -340,6 +348,8 @@
             } else { activeStaySpot = null; if(stayTimerInterval) clearInterval(stayTimerInterval); document.getElementById('stay-ui').classList.add('hidden'); }
         }
 
+        let currentOtomoRenderedId = null;
+
         function updateLocation(lat, lng) {
             const playerLatLng = L.latLng(lat, lng); document.getElementById('loading').style.display = 'none';
             if (!playerMarker) { playerMarker = L.marker(playerLatLng).addTo(map); map.setView(playerLatLng, 17); } else { playerMarker.setLatLng(playerLatLng); if (isTracking) map.panTo(playerLatLng); }
@@ -348,6 +358,33 @@
                 const distToCat = getDistance(lat, lng, catCurrentLatLng.lat, catCurrentLatLng.lng);
                 if (distToCat > DESPAWN_DISTANCE) despawnCat();
             }
+
+            if (activeOtomoId && CAT_DATA[activeOtomoId]) {
+                const otomoCat = CAT_DATA[activeOtomoId];
+                const otomoLatLng = L.latLng(lat - 0.00005, lng - 0.00005);
+                
+                if (!otomoMarker || currentOtomoRenderedId !== activeOtomoId) {
+                    if(otomoMarker) map.removeLayer(otomoMarker);
+                    const otomoIcon = L.divIcon({
+                        html: `<img src="${otomoCat.image}" style="width: 50px; height: 50px; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5));" class="face-right">`,
+                        className: '', iconSize: [50, 50], iconAnchor: [25, 50], popupAnchor: [0, -50]
+                    });
+                    otomoMarker = L.marker(otomoLatLng, { icon: otomoIcon, zIndexOffset: 900 }).addTo(map);
+                    currentOtomoRenderedId = activeOtomoId;
+
+                    otomoMarker.on('click', () => {
+                        catVoice.currentTime = 0; catVoice.play().catch(()=>{});
+                        const msg = OTOMO_COMMENTS[Math.floor(Math.random() * OTOMO_COMMENTS.length)];
+                        otomoMarker.bindPopup(`<b style="font-size: 14px; line-height: 1.4; display: block; padding: 4px;">${msg}</b>`, { className: 'custom-popup' }).openPopup();
+                    });
+                } else {
+                    otomoMarker.setLatLng(otomoLatLng);
+                }
+            } else if (otomoMarker) {
+                map.removeLayer(otomoMarker);
+                otomoMarker = null;
+            }
+
 
             if (lastLatLng && !DEBUG_MODE) {
                 const dist = getDistance(lastLatLng.lat, lastLatLng.lng, lat, lng);
@@ -365,9 +402,6 @@
             if (navigator.geolocation) { gpsWatchId = navigator.geolocation.watchPosition((p) => { let lat = p.coords.latitude, lng = p.coords.longitude; if (DEBUG_MODE) { lat = DUMMY_LAT; lng = DUMMY_LNG; } updateLocation(lat, lng); }, (e) => {}, { enableHighAccuracy: true, maximumAge: 2000, timeout: 5000 }); }
         });
 
-        // ==========================================
-        // 【アップデート】遊びモード対応のお庭システム
-        // ==========================================
         document.getElementById('go-garden-btn').addEventListener('click', () => {
             document.getElementById('map-screen').style.display = 'none'; 
             document.getElementById('garden-screen').style.display = 'block'; 
@@ -377,54 +411,76 @@
             let activeZukan = [...zukanData]; activeZukan.sort(() => 0.5 - Math.random()); let displayCats = activeZukan.slice(0, 5);
             displayCats.forEach(id => {
                 if (CAT_DATA[id]) {
-                    const el = document.createElement('img'); 
-                    el.src = CAT_DATA[id].image; 
-                    el.className = 'garden-cat w-24 h-24 object-contain interactive'; 
-                    // 最初は基本のゆっくりトランジション
-                    el.style.transition = 'top 3s linear, left 3s linear, transform 0.5s';
-                    el.style.top = `${Math.random() * 20 + 65}%`; 
-                    el.style.left = `${Math.random() * 80 + 5}%`;
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'garden-cat absolute w-24 h-24 interactive';
+                    wrapper.style.transition = 'top 3s linear, left 3s linear, transform 0.5s';
+                    wrapper.style.top = `${Math.random() * 20 + 65}%`; 
+                    wrapper.style.left = `${Math.random() * 80 + 5}%`;
+
+                    const img = document.createElement('img'); 
+                    img.src = CAT_DATA[id].image; 
+                    img.className = 'w-full h-full object-contain'; 
+
+                    const bubble = document.createElement('div');
+                    bubble.innerHTML = '🐟';
+                    bubble.className = 'absolute -top-4 left-1/2 transform -translate-x-1/2 bg-white rounded-full px-2 py-0.5 shadow-md border border-gray-200 text-sm animate-bounce hidden pointer-events-none';
+
+                    wrapper.appendChild(img);
+                    wrapper.appendChild(bubble);
+                    gc.appendChild(wrapper);
+
+                    let isHungry = Math.random() < 0.3;
+                    if (isHungry) bubble.classList.remove('hidden');
                     
-                    el.addEventListener('click', () => { catVoice.currentTime = 0; catVoice.play().catch(()=>{}); el.classList.add('bounce-active'); setTimeout(() => el.classList.remove('bounce-active'), 1000); }); 
-                    gc.appendChild(el);
+                    wrapper.addEventListener('click', () => { 
+                        if (isHungry) {
+                            if (foodCount > 0) {
+                                foodCount--; 
+                                document.getElementById('food-count').innerHTML = foodCount;
+                                isHungry = false;
+                                bubble.classList.add('hidden');
+                                
+                                catHungryVoice.currentTime = 0; 
+                                catHungryVoice.play().catch(()=>{});
+                                
+                                activeOtomoId = id;
+                                localStorage.setItem('tobishima_otomo', activeOtomoId);
+                                
+                                showCustomAlert('おとも決定！', `「${CAT_DATA[id].name}」が一緒に散歩してくれることになったニャ！<br>マップに戻ってみよう！`);
+                            } else {
+                                showCustomAlert('エサがないニャ', 'エサを持っていないとあげられないニャ。<br>歩いて見つけてくるニャ！');
+                            }
+                        } else {
+                            catVoice.currentTime = 0; catVoice.play().catch(()=>{}); 
+                            wrapper.classList.add('bounce-active'); setTimeout(() => wrapper.classList.remove('bounce-active'), 1000); 
+                        }
+                    }); 
                     
                     function move() { 
                         let nextActionTime = Math.random() * 6000 + 2000;
-                        
-                        // おもちゃがアクティブなら高確率で飛びかかる
                         if (isToyActive && toyPos) {
                             if (Math.random() < 0.6) {
-                                // ダッシュ用の素早いトランジションに変更
-                                el.style.transition = 'top 0.8s ease-out, left 0.8s ease-out, transform 0.2s';
-                                
-                                // 猫たちが完全に重ならないように、おもちゃの周囲に少し散らばらせる
+                                wrapper.style.transition = 'top 0.8s ease-out, left 0.8s ease-out, transform 0.2s';
                                 let targetL = toyPos.x + (Math.random() * 10 - 5);
                                 let targetT = toyPos.y + (Math.random() * 10 - 5);
-                                
-                                el.classList.remove('face-left','face-right'); 
-                                el.classList.add(parseFloat(el.style.left) < targetL ? 'face-right' : 'face-left'); 
-                                el.style.top = `${targetT}%`; 
-                                el.style.left = `${targetL}%`;
-                                
-                                if(Math.random() < 0.5) el.classList.add('bounce-active');
-                                setTimeout(() => el.classList.remove('bounce-active'), 500);
-                                
-                                // 遊び中は次の行動までの間隔を短くする
+                                wrapper.classList.remove('face-left','face-right'); 
+                                wrapper.classList.add(parseFloat(wrapper.style.left) < targetL ? 'face-right' : 'face-left'); 
+                                wrapper.style.top = `${targetT}%`; 
+                                wrapper.style.left = `${targetL}%`;
+                                if(Math.random() < 0.5) wrapper.classList.add('bounce-active');
+                                setTimeout(() => wrapper.classList.remove('bounce-active'), 500);
                                 nextActionTime = 1000 + Math.random() * 1000;
                             } else {
-                                // おもちゃを見てるだけの時間
                                 nextActionTime = 2000;
                             }
                         } else {
-                            // 通常の散歩
                             if(Math.random() < 0.3) { 
-                                // 元のゆっくりトランジションに戻す
-                                el.style.transition = 'top 3s linear, left 3s linear, transform 0.5s';
+                                wrapper.style.transition = 'top 3s linear, left 3s linear, transform 0.5s';
                                 let l = Math.random() * 80 + 5; 
-                                el.classList.remove('face-left','face-right'); 
-                                el.classList.add(parseFloat(el.style.left) < l ? 'face-right' : 'face-left'); 
-                                el.style.top = `${Math.random() * 20 + 65}%`; 
-                                el.style.left = `${l}%`; 
+                                wrapper.classList.remove('face-left','face-right'); 
+                                wrapper.classList.add(parseFloat(wrapper.style.left) < l ? 'face-right' : 'face-left'); 
+                                wrapper.style.top = `${Math.random() * 20 + 65}%`; 
+                                wrapper.style.left = `${l}%`; 
                             }
                         }
                         setTimeout(move, nextActionTime); 
@@ -434,13 +490,10 @@
             });
         });
 
-        // 庭からマップに戻る時、遊びモードも自動的に解除する
         document.getElementById('back-map-btn').addEventListener('click', () => { 
             document.getElementById('garden-screen').style.display = 'none'; 
             document.getElementById('map-screen').style.display = 'block'; 
             map.invalidateSize(); 
-            
-            // 遊びモードの強制リセット
             isToyActive = false;
             toyBtn.classList.replace('bg-red-500', 'bg-yellow-400');
             toyBtn.classList.replace('text-white', 'text-gray-800');
