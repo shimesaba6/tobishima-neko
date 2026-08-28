@@ -40,36 +40,13 @@
         @keyframes rainFall { 0% { background-position: 0 0; } 100% { background-position: -15px 80px; } }
 
         /* ミニゲーム（神経衰弱）用CSS */
-        .mg-card { 
-            width: 30%; 
-            max-width: 120px; 
-            aspect-ratio: 2 / 3; 
-            perspective: 1000px; 
-            cursor: pointer; 
-            position: relative; 
-        }
+        .mg-card { width: 30%; max-width: 120px; aspect-ratio: 2 / 3; perspective: 1000px; cursor: pointer; position: relative; margin: auto; }
         .mg-card-inner { position: absolute; width: 100%; height: 100%; transition: transform 0.4s; transform-style: preserve-3d; }
         .mg-card.flipped .mg-card-inner { transform: rotateY(180deg); }
-        
-        .mg-card-front, .mg-card-back { 
-            position: absolute; width: 100%; height: 100%; backface-visibility: hidden; 
-            border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 4px solid #1e3a8a; overflow: hidden; 
-        }
-        
-        /* 【修正】文字を表示するために flex-direction を縦（column）に変更し、隙間（gap）を空けました */
-        .mg-card-front { 
-            background-color: #fff; transform: rotateY(180deg); 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; 
-        }
-        
-        .mg-card-back { 
-            background-color: #1e3a8a; background-image: url('./card.png'); background-size: 85% auto; background-position: center; background-repeat: no-repeat; 
-        }
-        
-        /* 【修正】文字が入るスペースを確保するため、画像の高さを少し縮めました */
+        .mg-card-front, .mg-card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 4px solid #1e3a8a; overflow: hidden; }
+        .mg-card-front { background-color: #fff; transform: rotateY(180deg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+        .mg-card-back { background-color: #1e3a8a; background-image: url('./card.png'); background-size: 85% auto; background-position: center; background-repeat: no-repeat; }
         .mg-fruit-img { width: 70%; height: 60%; object-fit: contain; }
-        
-        /* 【追加】柑橘の名前を表示するテキストのデザイン */
         .mg-fruit-name { font-size: 12px; font-weight: 900; color: #5c4b51; text-align: center; line-height: 1; letter-spacing: -0.5px; }
     </style>
 </head>
@@ -130,6 +107,7 @@
         </div>
     </div>
 
+    <!-- お庭 -->
     <div id="garden-screen">
         <div class="absolute top-8 left-4 z-10">
             <button id="back-map-btn" class="bg-white/95 text-gray-800 px-6 py-3 rounded-full font-bold text-lg shadow-md border-2 border-gray-200 interactive">◀ マップ</button>
@@ -141,6 +119,7 @@
         <div id="garden-container" class="w-full h-full relative"></div>
     </div>
     
+    <!-- モーダル群 -->
     <div id="zukan-modal" class="fixed inset-0 bg-black/60 z-[3000] items-center justify-center p-4 backdrop-blur-sm"><div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl relative interactive border-4 border-indigo-200 flex flex-col max-h-[90dvh]"><h2 class="text-2xl font-black text-center text-indigo-800 mb-1">ねこ図鑑</h2><p class="text-center text-[11px] text-orange-600 font-bold mb-4">※まるい画像をタップで拡大</p><div id="cat-detail" class="bg-white rounded-2xl p-4 mb-4 min-h-[100px] flex items-center justify-center text-center shadow-inner border border-gray-200 shrink-0"><p class="text-gray-500 font-bold">ねこをタップするニャ</p></div><div class="grid grid-cols-3 gap-3 overflow-y-auto p-1 flex-1" id="zukan-list"></div><div class="mt-6 text-center shrink-0"><button id="close-zukan" class="bg-gray-300 px-10 py-4 rounded-full font-bold text-lg shadow-sm">とじる</button><p id="open-reset-btn" class="text-[11px] text-gray-400 font-bold mt-4 underline cursor-pointer p-2">データを初期化する</p></div></div></div>
     <div id="image-modal" class="fixed inset-0 bg-black/80 z-[5000] hidden flex-col items-center justify-center p-4 interactive"><div class="w-full max-w-md flex justify-end mb-2 pr-4"><button id="close-image-modal" class="text-white text-5xl font-bold">&times;</button></div><img id="enlarged-image" src="" class="w-[90%] max-w-[300px] object-contain filter drop-shadow-lg"></div>
     <div id="qr-modal" class="fixed inset-0 bg-black/90 z-[6000] hidden flex-col items-center justify-center p-4 interactive"><h2 class="text-white text-xl font-bold mb-4">シークレットQRを探せ！</h2><div id="qr-reader" class="w-full max-w-sm bg-white rounded-xl overflow-hidden mb-6"></div><button id="close-qr-btn" class="bg-red-500 text-white px-8 py-3 rounded-full font-bold text-lg">やめる</button></div>
@@ -202,13 +181,19 @@
                 <p id="mg-desc" class="font-bold text-gray-600 text-[13px] mb-6 leading-relaxed">
                     同じ種類の柑橘を２枚めくってペアを作ろう！<br>間違えすぎると、おとも猫がヒントをくれるかも…？
                 </p>
+                
                 <div id="mg-result" class="hidden mb-6 bg-orange-50 rounded-xl p-4 border border-orange-200">
                     <p class="text-sm font-bold text-gray-600 mb-2">見つけたペア</p>
                     <p class="text-3xl font-black text-green-600 mb-2"><span id="mg-result-score">0</span> <span class="text-sm text-gray-800">ペア</span></p>
                     <hr class="border-orange-200 my-2">
-                    <p class="text-[11px] font-bold text-gray-500">※5ペアでエサ1個と交換</p>
+                    <!-- 【修正】交換レートの表示を2ペアに変更 -->
+                    <p class="text-[11px] font-bold text-gray-500">※2ペアでエサ1個と交換</p>
                     <p class="text-lg font-bold text-orange-700 mt-1">エサを <span id="mg-result-food" class="text-3xl font-black">0</span> 個ゲット！</p>
+                    
+                    <!-- 【追加】豆知識を表示する領域 -->
+                    <div id="mg-mamechishiki"></div>
                 </div>
+
                 <div class="flex gap-3 justify-center">
                     <button id="mg-close-btn" class="bg-gray-400 text-white px-6 py-3 rounded-full font-bold shadow-md active:scale-95">もどる</button>
                     <button id="mg-start-btn" class="bg-orange-500 text-white px-8 py-3 rounded-full font-bold shadow-md active:scale-95">スタート！</button>
@@ -516,13 +501,14 @@
         // ==========================================
         // ミニゲーム（柑橘・神経衰弱）の処理
         // ==========================================
+        // 【追加】各品種の豆知識（desc）データを追加しました
         const MG_CITRUS_DATA = [
-            { id: "unnsyuu", name: "温州蜜柑", img: "./unnsyuu.png" },
-            { id: "hassaku", name: "はっさく", img: "./hassaku.png" },
-            { id: "setoka", name: "せとか", img: "./setoka.png" },
-            { id: "harumi", name: "はるみ", img: "./harumi.png" },
-            { id: "deco", name: "デコポン", img: "./deco.png" },
-            { id: "setouti", name: "レモン", img: "./setouti.png" }
+            { id: "unnsyuu", name: "温州蜜柑", img: "./unnsyuu.png", desc: "日本の冬の定番！皮が薄くて手で剥きやすいのが特徴だニャ。" },
+            { id: "hassaku", name: "はっさく", img: "./hassaku.png", desc: "少し大きめで、皮が厚く、独特のほろ苦さとさっぱりした甘みがあるニャ。" },
+            { id: "setoka", name: "せとか", img: "./setoka.png", desc: "「柑橘の大トロ」とも呼ばれる高級品種！皮が極薄で甘みが強いニャ。" },
+            { id: "harumi", name: "はるみ", img: "./harumi.png", desc: "ポンカンと清見の交配種。プチプチした食感と爽やかな甘さが最高だニャ。" },
+            { id: "deco", name: "デコポン", img: "./deco.png", desc: "頭がポコッと出っ張っているのが特徴。不知火（しらぬい）とも呼ばれるニャ。" },
+            { id: "setouti", name: "レモン", img: "./setouti.png", desc: "大崎下島の豊町地区は、国産レモン発祥の地とも言われているんだニャ！" }
         ];
 
         let mgTimer = null;
@@ -534,6 +520,9 @@
         let mgFlippedCards = [];
         let mgMatchedPairsInBoard = 0;
         let mgMissCount = 0; 
+        
+        // 【追加】各品種のミス回数を記録するデータ
+        let mgMissStats = {}; 
 
         const mgScreen = document.getElementById('minigame-screen');
         const mgOverlay = document.getElementById('mg-overlay');
@@ -579,6 +568,10 @@
             isMgPlaying = true;
             document.getElementById('mg-score').innerText = mgScore;
             document.getElementById('mg-time').innerText = mgTimeLeft;
+            
+            // 【追加】ミス回数の記録を初期化
+            mgMissStats = {};
+            MG_CITRUS_DATA.forEach(c => { mgMissStats[c.id] = 0; });
             
             generateCards();
             
@@ -649,6 +642,9 @@
                             <img src="${helperImg}" class="w-12 h-12 object-contain drop-shadow-md">
                         `;
                         hintCardObj.el.appendChild(hintEl);
+                        
+                        // 【追加】ヒントを出したらミス回数をリセット（ズル防止！）
+                        mgMissCount = 0;
                     }
                 }
             }
@@ -680,6 +676,9 @@
                     seBu.currentTime = 0; seBu.play().catch(()=>{});
                     
                     mgMissCount++; 
+                    // 【追加】間違えた柑橘のミス回数を記録
+                    mgMissStats[card1.dataset.id]++;
+                    mgMissStats[card2.dataset.id]++;
                     
                     setTimeout(() => {
                         card1.classList.remove('flipped');
@@ -695,7 +694,8 @@
             clearInterval(mgTimer);
             
             if(!isForceQuit) {
-                const earnedFood = Math.floor(mgScore / 5);
+                // 【修正】交換レートを「2ペアでエサ1個」に上方修正
+                const earnedFood = Math.floor(mgScore / 2);
                 foodCount += earnedFood;
                 localStorage.setItem('tobishima_food', foodCount);
                 document.getElementById('food-count').innerHTML = `${foodCount}`;
@@ -705,6 +705,41 @@
                 document.getElementById('mg-result').classList.remove('hidden');
                 document.getElementById('mg-result-score').innerText = mgScore;
                 document.getElementById('mg-result-food').innerText = earnedFood;
+                
+                // 【追加】一番間違えた柑橘を判定して豆知識を表示
+                let worstId = null;
+                let maxMiss = 0;
+                for(const id in mgMissStats) {
+                    if(mgMissStats[id] > maxMiss) {
+                        maxMiss = mgMissStats[id];
+                        worstId = id;
+                    }
+                }
+                
+                const mameContainer = document.getElementById('mg-mamechishiki');
+                if (maxMiss > 0 && worstId) {
+                    const worstFruit = MG_CITRUS_DATA.find(c => c.id === worstId);
+                    mameContainer.innerHTML = `
+                        <div class="mt-4 p-3 bg-white rounded-lg border-2 border-orange-300 text-left relative overflow-hidden">
+                            <p class="text-[10px] font-bold text-orange-500 mb-1">💡 苦戦したキミへ！ねこソムリエの豆知識</p>
+                            <p class="text-[12px] font-bold text-gray-700 leading-tight relative z-10">
+                                <span class="text-orange-600 font-black">【${worstFruit.name}】</span><br>
+                                ${worstFruit.desc}
+                            </p>
+                            <img src="${worstFruit.img}" class="absolute -right-4 -bottom-4 w-16 h-16 object-contain opacity-30 z-0 pointer-events-none">
+                        </div>
+                    `;
+                } else {
+                    mameContainer.innerHTML = `
+                        <div class="mt-4 p-3 bg-white rounded-lg border-2 border-orange-300 text-left relative overflow-hidden">
+                            <p class="text-[10px] font-bold text-orange-500 mb-1">💡 ねこソムリエの豆知識</p>
+                            <p class="text-[12px] font-bold text-gray-700 leading-tight relative z-10">
+                                ノーミスでパーフェクトだニャ！<br>君はもう立派な柑橘マスターだニャ！
+                            </p>
+                        </div>
+                    `;
+                }
+
                 document.getElementById('mg-start-btn').innerText = "もう一度！";
                 mgOverlay.classList.remove('hidden');
             }
