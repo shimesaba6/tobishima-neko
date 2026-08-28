@@ -40,13 +40,19 @@
         @keyframes rainFall { 0% { background-position: 0 0; } 100% { background-position: -15px 80px; } }
 
         /* 【修正】ミニゲーム（神経衰弱）用CSS */
-        .mg-card { width: 100%; height: 100%; max-width: 100%; max-height: 100%; aspect-ratio: 1/1; perspective: 1000px; cursor: pointer; position: relative; margin: auto; }
+        /* aspect-ratioを2/3にして綺麗な縦長のトランプサイズにしました */
+        .mg-card { width: 100%; height: 100%; max-width: 100%; max-height: 100%; aspect-ratio: 2/3; perspective: 1000px; cursor: pointer; position: relative; margin: auto; }
         .mg-card-inner { position: absolute; width: 100%; height: 100%; transition: transform 0.4s; transform-style: preserve-3d; }
         .mg-card.flipped .mg-card-inner { transform: rotateY(180deg); }
-        .mg-card-front, .mg-card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 4px solid #fb923c; overflow: hidden; }
+        
+        /* 枠線を深いネイビー（#1e3a8a）に変更し、角の丸みを少しシャープにしました */
+        .mg-card-front, .mg-card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 4px solid #1e3a8a; overflow: hidden; }
+        
         .mg-card-front { background-color: #fff; transform: rotateY(180deg); display: flex; align-items: center; justify-content: center; }
-        /* 【修正】ご用意いただいた card.png を裏面に適用 */
-        .mg-card-back { background-color: #fff; background-image: url('./card.png'); background-size: cover; background-position: center; background-repeat: no-repeat; }
+        
+        /* 裏面の背景色もネイビーにし、画像を「contain（はみ出さない）」設定で配置しました */
+        .mg-card-back { background-color: #1e3a8a; background-image: url('./card.png'); background-size: contain; background-position: center; background-repeat: no-repeat; }
+        
         .mg-fruit-img { width: 80%; height: 80%; object-fit: contain; }
     </style>
 </head>
@@ -107,6 +113,7 @@
         </div>
     </div>
 
+    <!-- お庭 -->
     <div id="garden-screen">
         <div class="absolute top-8 left-4 z-10">
             <button id="back-map-btn" class="bg-white/95 text-gray-800 px-6 py-3 rounded-full font-bold text-lg shadow-md border-2 border-gray-200 interactive">◀ マップ</button>
@@ -118,6 +125,7 @@
         <div id="garden-container" class="w-full h-full relative"></div>
     </div>
     
+    <!-- モーダル群 -->
     <div id="zukan-modal" class="fixed inset-0 bg-black/60 z-[3000] items-center justify-center p-4 backdrop-blur-sm"><div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl relative interactive border-4 border-indigo-200 flex flex-col max-h-[90dvh]"><h2 class="text-2xl font-black text-center text-indigo-800 mb-1">ねこ図鑑</h2><p class="text-center text-[11px] text-orange-600 font-bold mb-4">※まるい画像をタップで拡大</p><div id="cat-detail" class="bg-white rounded-2xl p-4 mb-4 min-h-[100px] flex items-center justify-center text-center shadow-inner border border-gray-200 shrink-0"><p class="text-gray-500 font-bold">ねこをタップするニャ</p></div><div class="grid grid-cols-3 gap-3 overflow-y-auto p-1 flex-1" id="zukan-list"></div><div class="mt-6 text-center shrink-0"><button id="close-zukan" class="bg-gray-300 px-10 py-4 rounded-full font-bold text-lg shadow-sm">とじる</button><p id="open-reset-btn" class="text-[11px] text-gray-400 font-bold mt-4 underline cursor-pointer p-2">データを初期化する</p></div></div></div>
     <div id="image-modal" class="fixed inset-0 bg-black/80 z-[5000] hidden flex-col items-center justify-center p-4 interactive"><div class="w-full max-w-md flex justify-end mb-2 pr-4"><button id="close-image-modal" class="text-white text-5xl font-bold">&times;</button></div><img id="enlarged-image" src="" class="w-[90%] max-w-[300px] object-contain filter drop-shadow-lg"></div>
     <div id="qr-modal" class="fixed inset-0 bg-black/90 z-[6000] hidden flex-col items-center justify-center p-4 interactive"><h2 class="text-white text-xl font-bold mb-4">シークレットQRを探せ！</h2><div id="qr-reader" class="w-full max-w-sm bg-white rounded-xl overflow-hidden mb-6"></div><button id="close-qr-btn" class="bg-red-500 text-white px-8 py-3 rounded-full font-bold text-lg">やめる</button></div>
@@ -168,7 +176,7 @@
             </div>
         </div>
 
-        <!-- 【修正】盤面（カードが枠からはみ出ないようにCSS制約を追加） -->
+        <!-- 盤面（カードが枠からはみ出ないようにCSS制約を追加） -->
         <div class="flex-1 w-full flex items-center justify-center p-4 pb-12 relative min-h-0 box-border">
             <div id="mg-board" class="w-full h-full max-w-[320px] max-h-[60dvh] grid grid-cols-2 grid-rows-4 gap-3">
                 <!-- JSでカードを生成します -->
@@ -583,7 +591,6 @@
             cardDeck.sort(() => 0.5 - Math.random());
 
             cardDeck.forEach((fruit, index) => {
-                // 【修正】各カードをさらに div（スロット） で包むことで枠への収まりを完璧にしました
                 const slotEl = document.createElement('div');
                 slotEl.className = 'w-full h-full flex items-center justify-center min-h-0';
                 
@@ -644,7 +651,6 @@
                 const card2 = mgFlippedCards[1];
 
                 if (card1.dataset.id === card2.dataset.id) {
-                    // 正解の音声
                     sePinpon.currentTime = 0; sePinpon.play().catch(()=>{});
                     
                     mgMatchedPairsInBoard++;
@@ -662,7 +668,6 @@
                         }, 800);
                     }
                 } else {
-                    // 不正解の音声
                     seBu.currentTime = 0; seBu.play().catch(()=>{});
                     
                     mgMissCount++; 
