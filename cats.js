@@ -52,6 +52,13 @@ const CAT_DATA = {
         description: "派手なアロハシャツを好むオジサン。時々島に遊びに来ては海に出る。多分釣りが好き。",
         spawn_time: "all"
     },
+    "akinada": {
+        id: "akinada",
+        name: "料金所猫",
+        image: "./akinada.png",
+        description: "安芸灘大橋で働く猫。時々勝手に料金表を書き換えるが、食べカスが口に残るのですぐバレる。",
+        spawn_time: "all"
+    },
     "drink": {
         id: "drink",
         name: "自販機猫",
