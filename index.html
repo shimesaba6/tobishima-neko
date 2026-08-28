@@ -186,11 +186,10 @@
                     <p class="text-sm font-bold text-gray-600 mb-2">見つけたペア</p>
                     <p class="text-3xl font-black text-green-600 mb-2"><span id="mg-result-score">0</span> <span class="text-sm text-gray-800">ペア</span></p>
                     <hr class="border-orange-200 my-2">
-                    <!-- 【修正】交換レートの表示を2ペアに変更 -->
                     <p class="text-[11px] font-bold text-gray-500">※2ペアでエサ1個と交換</p>
                     <p class="text-lg font-bold text-orange-700 mt-1">エサを <span id="mg-result-food" class="text-3xl font-black">0</span> 個ゲット！</p>
                     
-                    <!-- 【追加】豆知識を表示する領域 -->
+                    <!-- 豆知識を表示する領域 -->
                     <div id="mg-mamechishiki"></div>
                 </div>
 
@@ -501,7 +500,6 @@
         // ==========================================
         // ミニゲーム（柑橘・神経衰弱）の処理
         // ==========================================
-        // 【追加】各品種の豆知識（desc）データを追加しました
         const MG_CITRUS_DATA = [
             { id: "unnsyuu", name: "温州蜜柑", img: "./unnsyuu.png", desc: "日本の冬の定番！皮が薄くて手で剥きやすいのが特徴だニャ。" },
             { id: "hassaku", name: "はっさく", img: "./hassaku.png", desc: "少し大きめで、皮が厚く、独特のほろ苦さとさっぱりした甘みがあるニャ。" },
@@ -520,9 +518,6 @@
         let mgFlippedCards = [];
         let mgMatchedPairsInBoard = 0;
         let mgMissCount = 0; 
-        
-        // 【追加】各品種のミス回数を記録するデータ
-        let mgMissStats = {}; 
 
         const mgScreen = document.getElementById('minigame-screen');
         const mgOverlay = document.getElementById('mg-overlay');
@@ -535,6 +530,29 @@
             }
             document.getElementById('mg-otomo-img').src = helperImg;
             return helperImg;
+        }
+
+        // 【追加】ランダムに豆知識を表示する関数（タップで切り替え可能）
+        window.showRandomMamechishiki = function(event) {
+            // クリックイベントの伝播を防ぐ（ボタン等に影響させないため）
+            if (event) event.stopPropagation();
+            
+            const mameContainer = document.getElementById('mg-mamechishiki');
+            const randomFruit = MG_CITRUS_DATA[Math.floor(Math.random() * MG_CITRUS_DATA.length)];
+            
+            mameContainer.innerHTML = `
+                <div class="mt-4 p-3 bg-white rounded-lg border-2 border-orange-300 text-left relative overflow-hidden cursor-pointer active:scale-95 transition-transform" onclick="window.showRandomMamechishiki(event)">
+                    <p class="text-[10px] font-bold text-orange-500 mb-1 flex justify-between items-center">
+                        <span>💡 ねこソムリエの豆知識</span>
+                        <span class="text-gray-400 animate-pulse border border-gray-200 px-1 rounded">タップで次へ ❯</span>
+                    </p>
+                    <p class="text-[12px] font-bold text-gray-700 leading-tight relative z-10 pointer-events-none mt-2">
+                        <span class="text-orange-600 font-black">【${randomFruit.name}】</span><br>
+                        ${randomFruit.desc}
+                    </p>
+                    <img src="${randomFruit.img}" class="absolute -right-4 -bottom-4 w-16 h-16 object-contain opacity-30 z-0 pointer-events-none">
+                </div>
+            `;
         }
 
         document.getElementById('open-minigame-btn').addEventListener('click', () => {
@@ -568,10 +586,6 @@
             isMgPlaying = true;
             document.getElementById('mg-score').innerText = mgScore;
             document.getElementById('mg-time').innerText = mgTimeLeft;
-            
-            // 【追加】ミス回数の記録を初期化
-            mgMissStats = {};
-            MG_CITRUS_DATA.forEach(c => { mgMissStats[c.id] = 0; });
             
             generateCards();
             
@@ -643,7 +657,6 @@
                         `;
                         hintCardObj.el.appendChild(hintEl);
                         
-                        // 【追加】ヒントを出したらミス回数をリセット（ズル防止！）
                         mgMissCount = 0;
                     }
                 }
@@ -676,9 +689,6 @@
                     seBu.currentTime = 0; seBu.play().catch(()=>{});
                     
                     mgMissCount++; 
-                    // 【追加】間違えた柑橘のミス回数を記録
-                    mgMissStats[card1.dataset.id]++;
-                    mgMissStats[card2.dataset.id]++;
                     
                     setTimeout(() => {
                         card1.classList.remove('flipped');
@@ -694,7 +704,6 @@
             clearInterval(mgTimer);
             
             if(!isForceQuit) {
-                // 【修正】交換レートを「2ペアでエサ1個」に上方修正
                 const earnedFood = Math.floor(mgScore / 2);
                 foodCount += earnedFood;
                 localStorage.setItem('tobishima_food', foodCount);
@@ -706,39 +715,8 @@
                 document.getElementById('mg-result-score').innerText = mgScore;
                 document.getElementById('mg-result-food').innerText = earnedFood;
                 
-                // 【追加】一番間違えた柑橘を判定して豆知識を表示
-                let worstId = null;
-                let maxMiss = 0;
-                for(const id in mgMissStats) {
-                    if(mgMissStats[id] > maxMiss) {
-                        maxMiss = mgMissStats[id];
-                        worstId = id;
-                    }
-                }
-                
-                const mameContainer = document.getElementById('mg-mamechishiki');
-                if (maxMiss > 0 && worstId) {
-                    const worstFruit = MG_CITRUS_DATA.find(c => c.id === worstId);
-                    mameContainer.innerHTML = `
-                        <div class="mt-4 p-3 bg-white rounded-lg border-2 border-orange-300 text-left relative overflow-hidden">
-                            <p class="text-[10px] font-bold text-orange-500 mb-1">💡 苦戦したキミへ！ねこソムリエの豆知識</p>
-                            <p class="text-[12px] font-bold text-gray-700 leading-tight relative z-10">
-                                <span class="text-orange-600 font-black">【${worstFruit.name}】</span><br>
-                                ${worstFruit.desc}
-                            </p>
-                            <img src="${worstFruit.img}" class="absolute -right-4 -bottom-4 w-16 h-16 object-contain opacity-30 z-0 pointer-events-none">
-                        </div>
-                    `;
-                } else {
-                    mameContainer.innerHTML = `
-                        <div class="mt-4 p-3 bg-white rounded-lg border-2 border-orange-300 text-left relative overflow-hidden">
-                            <p class="text-[10px] font-bold text-orange-500 mb-1">💡 ねこソムリエの豆知識</p>
-                            <p class="text-[12px] font-bold text-gray-700 leading-tight relative z-10">
-                                ノーミスでパーフェクトだニャ！<br>君はもう立派な柑橘マスターだニャ！
-                            </p>
-                        </div>
-                    `;
-                }
+                // 【変更】ゲーム終了時に完全ランダムな豆知識を初期表示する
+                window.showRandomMamechishiki();
 
                 document.getElementById('mg-start-btn').innerText = "もう一度！";
                 mgOverlay.classList.remove('hidden');
