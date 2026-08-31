@@ -48,6 +48,11 @@
         .mg-card-back { background-color: #1e3a8a; background-image: url('./card.png'); background-size: 85% auto; background-position: center; background-repeat: no-repeat; }
         .mg-fruit-img { width: 70%; height: 60%; object-fit: contain; }
         .mg-fruit-name { font-size: 12px; font-weight: 900; color: #5c4b51; text-align: center; line-height: 1; letter-spacing: -0.5px; }
+
+        /* 【追加】ARカメラモードの選択中エフェクト用CSS */
+        .ar-cat-normal { filter: drop-shadow(0 10px 15px rgba(0,0,0,0.6)); }
+        /* 二重のドロップシャドウでシルエットに沿って発光させます */
+        .ar-cat-selected { filter: drop-shadow(0 0 8px #f97316) drop-shadow(0 0 20px #fb923c) brightness(1.15); }
     </style>
 </head>
 <body class="w-screen relative" style="height: 100dvh;">
@@ -134,9 +139,7 @@
     <div id="custom-alert-modal" class="fixed inset-0 bg-black/60 z-[7000] hidden flex-col items-center justify-center p-4 interactive"><div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-center border-4 border-orange-200"><h3 id="custom-alert-title" class="text-2xl font-black text-gray-800 mb-3"></h3><p id="custom-alert-message" class="text-base text-gray-600 font-bold mb-6"></p><button id="custom-alert-close" class="bg-orange-500 text-white px-10 py-3 rounded-full font-bold text-lg">OK</button></div></div>
     <div id="reset-confirm-modal" class="fixed inset-0 bg-black/80 z-[7000] hidden flex-col items-center justify-center p-4 interactive"><div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center border-4 border-red-300"><h3 class="text-2xl font-black text-red-600 mb-4">⚠️ データ初期化</h3><p class="text-sm text-gray-700 font-bold mb-6 text-left">記録がすべて消去されます。</p><label class="flex items-center justify-center gap-2 mb-6 bg-white p-4 rounded-xl cursor-pointer shadow-sm"><input type="checkbox" id="reset-checkbox" class="w-6 h-6 rounded accent-red-500"><span class="text-base font-bold text-gray-800">はい、初期化します</span></label><div class="flex gap-3 justify-center w-full"><button id="cancel-reset-btn" class="flex-1 bg-gray-300 py-3 rounded-full font-bold">やめる</button><button id="execute-reset-btn" class="flex-1 bg-gray-400 text-white py-3 rounded-full font-bold pointer-events-none" disabled>消去する</button></div></div></div>
 
-    <!-- ================================================== -->
-    <!-- AR撮影モード（ピンチズーム・拡大縮小対応） -->
-    <!-- ================================================== -->
+    <!-- AR撮影モード -->
     <div id="ar-modal" class="fixed inset-0 bg-black z-[8000] hidden flex-col interactive">
         <video id="ar-video" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline></video>
         
@@ -148,7 +151,6 @@
             </div>
             
             <div class="pointer-events-auto bg-gradient-to-t from-black/80 via-black/40 to-transparent w-full pt-8 px-4 flex flex-col items-center gap-3" style="padding-bottom: max(env(safe-area-inset-bottom), 24px);">
-                <!-- 説明文にズーム操作の案内を追加 -->
                 <p class="text-white text-xs font-bold drop-shadow-md bg-black/50 px-3 py-1 rounded-full text-center">
                     猫を選んでドラッグ！(最大3匹)<br>2本指で「拡大・縮小」もできるニャ
                 </p>
@@ -193,7 +195,6 @@
 
         <div class="flex-1 w-full overflow-y-auto flex items-center justify-center p-4 pb-8">
             <div id="mg-board" class="w-full max-w-[360px] flex flex-wrap justify-center gap-3">
-                <!-- JSでカードを生成します -->
             </div>
         </div>
 
@@ -511,8 +512,9 @@
         document.getElementById('close-qr-btn').addEventListener('click', () => { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); }); });
 
         // ==================================================
-        // 【アップデート】AR撮影モード（ピンチズーム・拡大縮小対応）
+        // 【アップデート】AR撮影モード（操作性とエフェクトの改善）
         // ==================================================
+        let arZIndexCounter = 100; // 重なりの優先度を管理するカウンター
         const arModal = document.getElementById('ar-modal'), arVideo = document.getElementById('ar-video');
         const arCatSelector = document.getElementById('ar-cat-selector'), arUiLayer = document.getElementById('ar-ui-layer'); 
         const arCatsContainer = document.getElementById('ar-cats-container');
@@ -524,6 +526,7 @@
             
             arCatsContainer.innerHTML = '';
             arCatSelector.innerHTML = ''; 
+            arZIndexCounter = 100; // 開くたびにリセット
             
             zukanData.forEach(catId => { 
                 if(CAT_DATA[catId]) { 
@@ -539,9 +542,9 @@
 
                         const newCat = document.createElement('img');
                         newCat.src = CAT_DATA[catId].image;
-                        newCat.className = "ar-active-cat absolute w-40 h-40 object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.6)] pointer-events-auto touch-none";
+                        // DOM操作を行わないため、初期状態で ar-cat-normal を付与
+                        newCat.className = "ar-active-cat ar-cat-normal absolute w-40 h-40 object-contain pointer-events-auto touch-none";
                         
-                        // 【変更】猫の初期状態と変数を設定（ピンチズーム対応）
                         let currentX = arCatsContainer.children.length * 20; 
                         let currentY = arCatsContainer.children.length * 20; 
                         let currentScale = 1;
@@ -550,11 +553,21 @@
                         newCat.style.left = '50%';
                         newCat.style.transform = `translate(calc(-50% + ${currentX}px), calc(-50% + ${currentY}px)) scale(${currentScale})`;
                         
+                        // Zインデックスで前面に持ってくる
+                        arZIndexCounter++;
+                        newCat.style.zIndex = arZIndexCounter;
+                        
                         let isDragging = false, isPinching = false; 
                         let startX, startY, initialDistance = 0, baseScale = 1;
                         
                         newCat.addEventListener('touchstart', (e) => { 
-                            arCatsContainer.appendChild(newCat);
+                            e.stopPropagation(); // 他の猫へのタッチの伝播を防ぐ（超重要）
+                            
+                            // 触った猫を最前面にし、光るエフェクトをつける
+                            arZIndexCounter++;
+                            newCat.style.zIndex = arZIndexCounter;
+                            newCat.classList.replace('ar-cat-normal', 'ar-cat-selected');
+
                             if (e.touches.length === 1) {
                                 isDragging = true; 
                                 isPinching = false;
@@ -573,6 +586,8 @@
                         
                         newCat.addEventListener('touchmove', (e) => { 
                             e.preventDefault(); 
+                            e.stopPropagation();
+                            
                             if (isDragging && e.touches.length === 1) {
                                 currentX = e.touches[0].clientX - startX;
                                 currentY = e.touches[0].clientY - startY;
@@ -583,14 +598,25 @@
                                     e.touches[0].clientY - e.touches[1].clientY
                                 );
                                 currentScale = baseScale * (currentDistance / initialDistance);
-                                currentScale = Math.max(0.3, Math.min(currentScale, 4.0)); // 0.3倍から4倍まで
+                                currentScale = Math.max(0.3, Math.min(currentScale, 4.0));
                                 newCat.style.transform = `translate(calc(-50% + ${currentX}px), calc(-50% + ${currentY}px)) scale(${currentScale})`;
                             }
                         }, {passive: false}); 
                         
                         newCat.addEventListener('touchend', (e) => { 
                             if (e.touches.length < 2) isPinching = false;
-                            if (e.touches.length === 0) isDragging = false;
+                            if (e.touches.length === 0) {
+                                isDragging = false;
+                                // 指が離れたら光るエフェクトを戻す
+                                newCat.classList.replace('ar-cat-selected', 'ar-cat-normal');
+                            }
+                        }); 
+
+                        // 画面外に指が出た時の安全対策
+                        newCat.addEventListener('touchcancel', () => { 
+                            isPinching = false;
+                            isDragging = false;
+                            newCat.classList.replace('ar-cat-selected', 'ar-cat-normal');
                         }); 
                         
                         arCatsContainer.appendChild(newCat);
