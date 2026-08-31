@@ -59,6 +59,27 @@ const CAT_DATA = {
         description: "安芸灘大橋で働く猫。時々勝手に料金表を書き換えるが、食べカスが口に残るのですぐバレる。",
         spawn_time: "all"
     },
+    "drive": {
+        id: "drive",
+        name: "運転猫",
+        image: "./drive.png",
+        description: "空港からレンタカーで来た観光猫。ついつい景色を見ながら走ってしまうので後続車が詰まりがち。",
+        spawn_time: "all"
+    },
+    "ice": {
+        id: "ice",
+        name: "アイス猫",
+        image: "./ice.png",
+        description: "島唯一の歴史あるアイスクリーム屋さんに生息する猫。もはや猫ではなくアイス。本人は気に入っているようだ。",
+        spawn_time: "all"
+    },
+    "haraita": {
+        id: "haraita",
+        name: "腹痛猫",
+        image: "./haraita.png",
+        description: "食べ過ぎて腹痛になった観光猫。島はドラッグストアも少ないから敏感な猫（人）は薬携帯推奨。",
+        spawn_time: "all"
+    },
     "drink": {
         id: "drink",
         name: "自販機猫",
