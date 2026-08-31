@@ -80,7 +80,6 @@
         </div>
 
         <div class="ui-layer bottom-0 left-0 w-full p-3 pb-6 flex justify-between items-end gap-2">
-            <!-- 【変更】左側の3つのボタンをオリジナルイラストに差し替え -->
             <div class="flex flex-col gap-3">
                 <button id="go-garden-btn" class="w-14 h-14 interactive transition-transform active:scale-95 drop-shadow-lg rounded-2xl overflow-hidden bg-white/50">
                     <img src="./niwa.png" class="w-full h-full object-cover">
@@ -107,7 +106,6 @@
                 </div>
             </div>
 
-            <!-- 【変更】右側の2つのボタンをオリジナルイラストに差し替え -->
             <div class="flex flex-col gap-3">
                 <button id="open-qr-btn" class="w-14 h-14 interactive transition-transform active:scale-95 drop-shadow-lg rounded-2xl overflow-hidden bg-white/50">
                     <img src="./yomitori.png" class="w-full h-full object-cover">
@@ -138,16 +136,31 @@
     <div id="custom-alert-modal" class="fixed inset-0 bg-black/60 z-[7000] hidden flex-col items-center justify-center p-4 interactive"><div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-center border-4 border-orange-200"><h3 id="custom-alert-title" class="text-2xl font-black text-gray-800 mb-3"></h3><p id="custom-alert-message" class="text-base text-gray-600 font-bold mb-6"></p><button id="custom-alert-close" class="bg-orange-500 text-white px-10 py-3 rounded-full font-bold text-lg">OK</button></div></div>
     <div id="reset-confirm-modal" class="fixed inset-0 bg-black/80 z-[7000] hidden flex-col items-center justify-center p-4 interactive"><div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center border-4 border-red-300"><h3 class="text-2xl font-black text-red-600 mb-4">⚠️ データ初期化</h3><p class="text-sm text-gray-700 font-bold mb-6 text-left">記録がすべて消去されます。</p><label class="flex items-center justify-center gap-2 mb-6 bg-white p-4 rounded-xl cursor-pointer shadow-sm"><input type="checkbox" id="reset-checkbox" class="w-6 h-6 rounded accent-red-500"><span class="text-base font-bold text-gray-800">はい、初期化します</span></label><div class="flex gap-3 justify-center w-full"><button id="cancel-reset-btn" class="flex-1 bg-gray-300 py-3 rounded-full font-bold">やめる</button><button id="execute-reset-btn" class="flex-1 bg-gray-400 text-white py-3 rounded-full font-bold pointer-events-none" disabled>消去する</button></div></div></div>
 
-    <!-- AR撮影モード -->
+    <!-- ================================================== -->
+    <!-- 【アップデート】AR撮影モード（下部UI固定＆複数猫対応） -->
+    <!-- ================================================== -->
     <div id="ar-modal" class="fixed inset-0 bg-black z-[8000] hidden flex-col interactive">
         <video id="ar-video" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline></video>
-        <img id="ar-cat-img" src="" class="absolute hidden w-40 h-40 object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.6)]" style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
-        <div id="ar-ui-layer" class="absolute inset-0 flex flex-col justify-between p-4 pb-12 pointer-events-none">
-            <button id="close-ar-btn" class="self-end bg-red-500 text-white px-4 py-2 rounded-full font-bold pointer-events-auto border-2 border-white shadow-lg mt-2">✖ 閉じる</button>
-            <div class="flex flex-col gap-3 pointer-events-auto items-center mb-8">
-                <p class="text-white text-xs font-bold drop-shadow-md bg-black/50 px-3 py-1 rounded-full">猫を選んでドラッグ！</p>
-                <div id="ar-cat-selector" class="flex gap-3 overflow-x-auto bg-black/40 backdrop-blur-sm p-3 rounded-2xl w-full max-w-sm border border-white/30"></div>
-                <button id="ar-shutter-btn" class="bg-white/90 text-gray-800 px-8 py-4 rounded-full font-black text-lg shadow-xl border-4 border-gray-300 active:scale-95 active:bg-gray-200">📸 写真を撮る！</button>
+        
+        <!-- 【追加】複数の猫を配置するためのコンテナ -->
+        <div id="ar-cats-container" class="absolute inset-0 z-10 pointer-events-none overflow-hidden"></div>
+        
+        <!-- 【変更】UI全体を下部に寄せるための構成 -->
+        <div id="ar-ui-layer" class="absolute inset-0 z-20 flex flex-col justify-between pointer-events-none">
+            <!-- 上部（閉じるボタン） -->
+            <div class="p-4 flex justify-end">
+                <button id="close-ar-btn" class="bg-red-500 text-white px-4 py-2 rounded-full font-bold pointer-events-auto border-2 border-white shadow-lg mt-2">✖ 閉じる</button>
+            </div>
+            
+            <!-- 下部（セレクター＆撮影ボタン）グラデーション背景＋セーフエリア対応 -->
+            <div class="pointer-events-auto bg-gradient-to-t from-black/80 via-black/40 to-transparent w-full pt-8 px-4 flex flex-col items-center gap-3" style="padding-bottom: max(env(safe-area-inset-bottom), 24px);">
+                <p class="text-white text-xs font-bold drop-shadow-md bg-black/50 px-3 py-1 rounded-full">猫を選んでドラッグ！(最大3匹)</p>
+                <div id="ar-cat-selector" class="flex gap-3 overflow-x-auto w-full max-w-sm pb-2"></div>
+                
+                <div class="flex gap-3 w-full max-w-sm justify-center">
+                    <button id="ar-clear-btn" class="bg-gray-200 text-gray-800 px-5 py-3 rounded-full font-bold shadow-xl border-4 border-gray-300 active:scale-95 shrink-0">やり直す</button>
+                    <button id="ar-shutter-btn" class="bg-white/90 text-gray-800 py-3 rounded-full font-black text-lg shadow-xl border-4 border-gray-300 active:scale-95 active:bg-gray-200 flex-1">📸 撮る！</button>
+                </div>
             </div>
         </div>
     </div>
@@ -501,11 +514,119 @@
         document.getElementById('open-qr-btn').addEventListener('click', () => { document.getElementById('qr-modal').classList.remove('hidden'); document.getElementById('qr-modal').classList.add('flex'); html5QrCode = new Html5Qrcode("qr-reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, (dec) => { if(CAT_DATA[dec]) { html5QrCode.stop().then(() => { document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); addToZukan(dec); catVoice.currentTime = 0; catVoice.play().catch(()=>{}); showCustomAlert('🎉 シークレット発見！', `「${CAT_DATA[dec].name}」をゲットしたニャ！`); }); } }, (err) => {}).catch(err => { showCustomAlert('エラー', 'カメラの起動に失敗しました。'); document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); }); });
         document.getElementById('close-qr-btn').addEventListener('click', () => { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); }); });
 
-        const arModal = document.getElementById('ar-modal'), arVideo = document.getElementById('ar-video'), arCatImg = document.getElementById('ar-cat-img'), arCatSelector = document.getElementById('ar-cat-selector'), arUiLayer = document.getElementById('ar-ui-layer'); let arStream = null;
-        document.getElementById('open-ar-btn').addEventListener('click', () => { arModal.classList.remove('hidden'); arModal.classList.add('flex'); arCatImg.classList.add('hidden'); arCatSelector.innerHTML = ''; zukanData.forEach(catId => { if(CAT_DATA[catId]) { const btn = document.createElement('img'); btn.src = CAT_DATA[catId].image; btn.className = "w-16 h-16 object-contain bg-white rounded-full border-2 border-pink-300 shadow-md flex-shrink-0 active:scale-95"; btn.addEventListener('click', () => { arCatImg.src = CAT_DATA[catId].image; arCatImg.classList.remove('hidden'); arCatImg.style.top = '50%'; arCatImg.style.left = '50%'; }); arCatSelector.appendChild(btn); } }); if (arCatSelector.innerHTML === '') arCatSelector.innerHTML = '<p class="text-white text-sm p-2">まずは島を歩いてねこを見つけてニャ！</p>'; navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1920 } } }).then(stream => { arStream = stream; arVideo.srcObject = stream; }).catch(err => { showCustomAlert('エラー', 'カメラの使用が許可されていません。'); }); });
-        document.getElementById('close-ar-btn').addEventListener('click', () => { if(arStream) arStream.getTracks().forEach(t => t.stop()); arModal.classList.add('hidden'); arModal.classList.remove('flex'); });
-        let isDragging = false, startX, startY, initialTop, initialLeft; arCatImg.addEventListener('touchstart', (e) => { isDragging = true; startX = e.touches[0].clientX; startY = e.touches[0].clientY; const rect = arCatImg.getBoundingClientRect(); initialLeft = rect.left + rect.width / 2; initialTop = rect.top + rect.height / 2; }); arCatImg.addEventListener('touchmove', (e) => { if(!isDragging) return; e.preventDefault(); arCatImg.style.left = `${initialLeft + (e.touches[0].clientX - startX)}px`; arCatImg.style.top = `${initialTop + (e.touches[0].clientY - startY)}px`; }); arCatImg.addEventListener('touchend', () => { isDragging = false; });
-        document.getElementById('ar-shutter-btn').addEventListener('click', () => { const flash = document.createElement('div'); flash.className = "fixed inset-0 bg-white z-[9999] transition-opacity duration-300 pointer-events-none"; document.body.appendChild(flash); setTimeout(() => flash.classList.add('opacity-0'), 50); setTimeout(() => flash.remove(), 350); const dpr = window.devicePixelRatio || 2; const canvas = document.createElement('canvas'); canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr); const videoRatio = arVideo.videoWidth / arVideo.videoHeight; const screenRatio = window.innerWidth / window.innerHeight; let drawW = window.innerWidth, drawH = window.innerHeight, offsetX = 0, offsetY = 0; if (videoRatio > screenRatio) { drawW = window.innerHeight * videoRatio; offsetX = (window.innerWidth - drawW) / 2; } else { drawH = window.innerWidth / videoRatio; offsetY = (window.innerHeight - drawH) / 2; } ctx.drawImage(arVideo, offsetX, offsetY, drawW, drawH); if (!arCatImg.classList.contains('hidden')) { const catRect = arCatImg.getBoundingClientRect(); ctx.drawImage(arCatImg, catRect.left, catRect.top, catRect.width, catRect.height); } const dataUrl = canvas.toDataURL('image/png'); document.getElementById('ar-result-img').src = dataUrl; document.getElementById('ar-result-modal').classList.remove('hidden'); document.getElementById('ar-result-modal').classList.add('flex'); });
+        // ==================================================
+        // 【アップデート】AR撮影モードの処理（複数猫対応）
+        // ==================================================
+        const arModal = document.getElementById('ar-modal'), arVideo = document.getElementById('ar-video');
+        const arCatSelector = document.getElementById('ar-cat-selector'), arUiLayer = document.getElementById('ar-ui-layer'); 
+        const arCatsContainer = document.getElementById('ar-cats-container');
+        let arStream = null;
+
+        document.getElementById('open-ar-btn').addEventListener('click', () => { 
+            arModal.classList.remove('hidden'); 
+            arModal.classList.add('flex'); 
+            
+            // 開いた時に猫をクリア
+            arCatsContainer.innerHTML = '';
+            arCatSelector.innerHTML = ''; 
+            
+            zukanData.forEach(catId => { 
+                if(CAT_DATA[catId]) { 
+                    const btn = document.createElement('img'); 
+                    btn.src = CAT_DATA[catId].image; 
+                    btn.className = "w-16 h-16 object-contain bg-white rounded-full border-2 border-pink-300 shadow-md flex-shrink-0 active:scale-95 cursor-pointer"; 
+                    
+                    btn.addEventListener('click', () => { 
+                        // 最大3匹までの制限
+                        if (arCatsContainer.children.length >= 3) {
+                            showCustomAlert('お知らせ', '一度に置ける猫は3匹までだニャ！<br>「やり直す」ボタンで消せるニャ。');
+                            return;
+                        }
+
+                        // 新しい猫を生成
+                        const newCat = document.createElement('img');
+                        newCat.src = CAT_DATA[catId].image;
+                        newCat.className = "ar-active-cat absolute w-40 h-40 object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.6)] pointer-events-auto touch-none cursor-move";
+                        
+                        // 初期位置を少しずつずらして配置
+                        const offset = arCatsContainer.children.length * 20;
+                        newCat.style.top = `calc(50% + ${offset}px)`;
+                        newCat.style.left = `calc(50% + ${offset}px)`;
+                        newCat.style.transform = 'translate(-50%, -50%)';
+                        
+                        // ドラッグ処理の設定
+                        let isDragging = false, startX, startY, initialTop, initialLeft; 
+                        newCat.addEventListener('touchstart', (e) => { 
+                            isDragging = true; 
+                            startX = e.touches[0].clientX; 
+                            startY = e.touches[0].clientY; 
+                            const rect = newCat.getBoundingClientRect(); 
+                            initialLeft = rect.left + rect.width / 2; 
+                            initialTop = rect.top + rect.height / 2; 
+                            
+                            // タップした猫を一番手前に持ってくる
+                            arCatsContainer.appendChild(newCat);
+                        }, {passive: false}); 
+                        
+                        newCat.addEventListener('touchmove', (e) => { 
+                            if(!isDragging) return; 
+                            e.preventDefault(); 
+                            newCat.style.left = `${initialLeft + (e.touches[0].clientX - startX)}px`; 
+                            newCat.style.top = `${initialTop + (e.touches[0].clientY - startY)}px`; 
+                        }, {passive: false}); 
+                        
+                        newCat.addEventListener('touchend', () => { isDragging = false; });
+                        
+                        arCatsContainer.appendChild(newCat);
+                    }); 
+                    arCatSelector.appendChild(btn); 
+                } 
+            }); 
+            
+            if (arCatSelector.innerHTML === '') arCatSelector.innerHTML = '<p class="text-white text-sm p-2">まずは島を歩いてねこを見つけてニャ！</p>'; 
+            
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1920 } } })
+            .then(stream => { arStream = stream; arVideo.srcObject = stream; })
+            .catch(err => { showCustomAlert('エラー', 'カメラの使用が許可されていません。'); }); 
+        });
+
+        // 全消去ボタン
+        document.getElementById('ar-clear-btn').addEventListener('click', () => {
+            arCatsContainer.innerHTML = '';
+        });
+
+        document.getElementById('close-ar-btn').addEventListener('click', () => { 
+            if(arStream) arStream.getTracks().forEach(t => t.stop()); 
+            arCatsContainer.innerHTML = ''; // 閉じる時にもクリア
+            arModal.classList.add('hidden'); 
+            arModal.classList.remove('flex'); 
+        });
+
+        document.getElementById('ar-shutter-btn').addEventListener('click', () => { 
+            const flash = document.createElement('div'); flash.className = "fixed inset-0 bg-white z-[9999] transition-opacity duration-300 pointer-events-none"; document.body.appendChild(flash); 
+            setTimeout(() => flash.classList.add('opacity-0'), 50); setTimeout(() => flash.remove(), 350); 
+            
+            const dpr = window.devicePixelRatio || 2; 
+            const canvas = document.createElement('canvas'); canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr; 
+            const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr); 
+            const videoRatio = arVideo.videoWidth / arVideo.videoHeight; const screenRatio = window.innerWidth / window.innerHeight; 
+            let drawW = window.innerWidth, drawH = window.innerHeight, offsetX = 0, offsetY = 0; 
+            if (videoRatio > screenRatio) { drawW = window.innerHeight * videoRatio; offsetX = (window.innerWidth - drawW) / 2; } 
+            else { drawH = window.innerWidth / videoRatio; offsetY = (window.innerHeight - drawH) / 2; } 
+            ctx.drawImage(arVideo, offsetX, offsetY, drawW, drawH); 
+            
+            // 配置されたすべての猫をキャンバスに合成
+            const cats = document.querySelectorAll('.ar-active-cat');
+            cats.forEach(catEl => {
+                const catRect = catEl.getBoundingClientRect(); 
+                ctx.drawImage(catEl, catRect.left, catRect.top, catRect.width, catRect.height); 
+            });
+            
+            const dataUrl = canvas.toDataURL('image/png'); 
+            document.getElementById('ar-result-img').src = dataUrl; 
+            document.getElementById('ar-result-modal').classList.remove('hidden'); document.getElementById('ar-result-modal').classList.add('flex'); 
+        });
+        
         document.getElementById('close-ar-result-btn').addEventListener('click', () => { document.getElementById('ar-result-modal').classList.add('hidden'); document.getElementById('ar-result-modal').classList.remove('flex'); });
         document.getElementById('download-ar-result-btn').addEventListener('click', () => { const dataUrl = document.getElementById('ar-result-img').src; const link = document.createElement('a'); link.download = `tobishima_${Date.now()}.png`; link.href = dataUrl; link.click(); });
 
@@ -633,6 +754,7 @@
                         <div class="mg-card-back"></div>
                         <div class="mg-card-front">
                             <img src="${fruit.img}" class="mg-fruit-img">
+                            <span class="mg-fruit-name">${fruit.name}</span>
                         </div>
                     </div>
                 `;
