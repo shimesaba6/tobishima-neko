@@ -121,7 +121,6 @@
         </div>
     </div>
 
-    <!-- お庭 -->
     <div id="garden-screen">
         <div class="absolute top-8 left-4 z-10">
             <button id="back-map-btn" class="bg-white/95 text-gray-800 px-6 py-3 rounded-full font-bold text-lg shadow-md border-2 border-gray-200 interactive">◀ マップ</button>
@@ -133,7 +132,6 @@
         <div id="garden-container" class="w-full h-full relative"></div>
     </div>
     
-    <!-- モーダル群 -->
     <div id="zukan-modal" class="fixed inset-0 bg-black/60 z-[3000] items-center justify-center p-4 backdrop-blur-sm"><div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl relative interactive border-4 border-indigo-200 flex flex-col max-h-[90dvh]"><h2 class="text-2xl font-black text-center text-indigo-800 mb-1">ねこ図鑑</h2><p class="text-center text-[11px] text-orange-600 font-bold mb-4">※まるい画像をタップで拡大</p><div id="cat-detail" class="bg-white rounded-2xl p-4 mb-4 min-h-[100px] flex items-center justify-center text-center shadow-inner border border-gray-200 shrink-0"><p class="text-gray-500 font-bold">ねこをタップするニャ</p></div><div class="grid grid-cols-3 gap-3 overflow-y-auto p-1 flex-1" id="zukan-list"></div><div class="mt-6 text-center shrink-0"><button id="close-zukan" class="bg-gray-300 px-10 py-4 rounded-full font-bold text-lg shadow-sm">とじる</button><p id="open-reset-btn" class="text-[11px] text-gray-400 font-bold mt-4 underline cursor-pointer p-2">データを初期化する</p></div></div></div>
     <div id="image-modal" class="fixed inset-0 bg-black/80 z-[5000] hidden flex-col items-center justify-center p-4 interactive"><div class="w-full max-w-md flex justify-end mb-2 pr-4"><button id="close-image-modal" class="text-white text-5xl font-bold">&times;</button></div><img id="enlarged-image" src="" class="w-[90%] max-w-[300px] object-contain filter drop-shadow-lg"></div>
     <div id="qr-modal" class="fixed inset-0 bg-black/90 z-[6000] hidden flex-col items-center justify-center p-4 interactive"><h2 class="text-white text-xl font-bold mb-4">シークレットQRを探せ！</h2><div id="qr-reader" class="w-full max-w-sm bg-white rounded-xl overflow-hidden mb-6"></div><button id="close-qr-btn" class="bg-red-500 text-white px-8 py-3 rounded-full font-bold text-lg">やめる</button></div>
@@ -141,12 +139,11 @@
     <div id="reset-confirm-modal" class="fixed inset-0 bg-black/80 z-[7000] hidden flex-col items-center justify-center p-4 interactive"><div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center border-4 border-red-300"><h3 class="text-2xl font-black text-red-600 mb-4">⚠️ データ初期化</h3><p class="text-sm text-gray-700 font-bold mb-6 text-left">記録がすべて消去されます。</p><label class="flex items-center justify-center gap-2 mb-6 bg-white p-4 rounded-xl cursor-pointer shadow-sm"><input type="checkbox" id="reset-checkbox" class="w-6 h-6 rounded accent-red-500"><span class="text-base font-bold text-gray-800">はい、初期化します</span></label><div class="flex gap-3 justify-center w-full"><button id="cancel-reset-btn" class="flex-1 bg-gray-300 py-3 rounded-full font-bold">やめる</button><button id="execute-reset-btn" class="flex-1 bg-gray-400 text-white py-3 rounded-full font-bold pointer-events-none" disabled>消去する</button></div></div></div>
 
     <!-- ================================================== -->
-    <!-- 【変更】AR撮影モード（画面全体をタッチパッド化） -->
+    <!-- 【アップデート】AR撮影モード（UIのトグル表示化＆タッチ貫通） -->
     <!-- ================================================== -->
     <div id="ar-modal" class="fixed inset-0 bg-black z-[8000] hidden flex-col interactive">
         <video id="ar-video" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline></video>
         
-        <!-- 【変更】コンテナに pointer-events-auto touch-none を付与し、画面全体でタッチ操作を受け付けます -->
         <div id="ar-cats-container" class="absolute inset-0 z-10 pointer-events-auto touch-none overflow-hidden"></div>
         
         <div id="ar-ui-layer" class="absolute inset-0 z-20 flex flex-col justify-between pointer-events-none">
@@ -154,16 +151,30 @@
                 <button id="close-ar-btn" class="bg-red-500 text-white px-4 py-2 rounded-full font-bold pointer-events-auto border-2 border-white shadow-lg mt-2">✖ 閉じる</button>
             </div>
             
-            <div class="pointer-events-auto bg-gradient-to-t from-black/80 via-black/40 to-transparent w-full pt-8 px-4 flex flex-col items-center gap-3" style="padding-bottom: max(env(safe-area-inset-bottom), 24px);">
-                <!-- 【変更】操作説明を更新 -->
-                <p class="text-white text-xs font-bold drop-shadow-md bg-black/50 px-3 py-1 rounded-full text-center">
-                    猫を選んで画面をなぞろう！<br>「空きスペース」をなぞっても操作できるニャ！
-                </p>
-                <div id="ar-cat-selector" class="flex gap-3 overflow-x-auto w-full max-w-sm pb-2"></div>
+            <!-- 下部UIのコンテナ（背景グラデーションもここにかけて、ポインターイベントをスルーさせます） -->
+            <div class="bg-gradient-to-t from-black/80 via-black/40 to-transparent w-full pt-16 px-4 flex flex-col items-center gap-3 pointer-events-none" style="padding-bottom: max(env(safe-area-inset-bottom), 24px);">
                 
-                <div class="flex gap-3 w-full max-w-sm justify-center">
-                    <button id="ar-clear-btn" class="bg-gray-200 text-gray-800 px-5 py-3 rounded-full font-bold shadow-xl border-4 border-gray-300 active:scale-95 shrink-0">やり直す</button>
-                    <button id="ar-shutter-btn" class="bg-white/90 text-gray-800 py-3 rounded-full font-black text-lg shadow-xl border-4 border-gray-300 active:scale-95 active:bg-gray-200 flex-1">📸 撮る！</button>
+                <!-- 【追加】猫選択メニュー（ポップアップ） -->
+                <div id="ar-cat-menu" class="hidden pointer-events-auto flex-col items-center gap-3 w-full max-w-sm bg-black/70 backdrop-blur-md p-4 rounded-3xl border border-white/30 shadow-2xl">
+                    <p class="text-white text-xs font-bold text-center leading-relaxed">
+                        猫をタップして追加するニャ！(最大3匹)<br>
+                        <span class="text-orange-300">追加後は画面の空きスペースをなぞって<br>「移動」や「拡大・縮小」ができるニャ！</span>
+                    </p>
+                    <div id="ar-cat-selector" class="flex gap-3 overflow-x-auto w-full pb-2"></div>
+                    <button id="close-cat-menu-btn" class="bg-gray-500 text-white px-8 py-2 rounded-full text-sm font-bold shadow-md active:scale-95 mt-1">とじる</button>
+                </div>
+                
+                <!-- 【変更】常時表示の3つのボタン（このボタン自体はタップ可能） -->
+                <div class="pointer-events-auto flex gap-2 w-full max-w-sm justify-center">
+                    <button id="ar-add-cat-btn" class="bg-orange-500 text-white px-4 py-3 rounded-full font-bold shadow-xl border-4 border-white active:scale-95 shrink-0 flex flex-col items-center justify-center leading-none gap-1">
+                        <span class="text-xl">🐾</span><span class="text-[10px]">よぶ</span>
+                    </button>
+                    <button id="ar-clear-btn" class="bg-gray-200 text-gray-800 px-3 py-3 rounded-full font-bold shadow-xl border-4 border-gray-300 active:scale-95 shrink-0 flex flex-col items-center justify-center leading-none gap-1">
+                        <span class="text-xl">🗑️</span><span class="text-[10px]">リセット</span>
+                    </button>
+                    <button id="ar-shutter-btn" class="bg-white/90 text-gray-800 py-3 rounded-full font-black text-xl shadow-xl border-4 border-gray-300 active:scale-95 active:bg-gray-200 flex-1">
+                        📸 撮る！
+                    </button>
                 </div>
             </div>
         </div>
@@ -529,11 +540,25 @@
         const arModal = document.getElementById('ar-modal'), arVideo = document.getElementById('ar-video');
         const arCatSelector = document.getElementById('ar-cat-selector'), arUiLayer = document.getElementById('ar-ui-layer'); 
         const arCatsContainer = document.getElementById('ar-cats-container');
+        
+        // 【追加】ポップアップメニュー用の変数
+        const arCatMenu = document.getElementById('ar-cat-menu');
+        const arAddCatBtn = document.getElementById('ar-add-cat-btn');
+        const closeCatMenuBtn = document.getElementById('close-cat-menu-btn');
         let arStream = null;
+
+        // メニューの開閉処理
+        arAddCatBtn.addEventListener('click', () => {
+            arCatMenu.classList.remove('hidden');
+            arCatMenu.classList.add('flex');
+        });
+        closeCatMenuBtn.addEventListener('click', () => {
+            arCatMenu.classList.add('hidden');
+            arCatMenu.classList.remove('flex');
+        });
 
         // コンテナ全体でタッチイベントを拾い、現在アクティブな猫を操作する
         arCatsContainer.addEventListener('touchstart', (e) => { 
-            // もし猫の画像を直接タップしたら、その猫をアクティブ（選択状態）に切り替える
             if (e.target.classList.contains('ar-active-cat')) {
                 if (arActiveCat && arActiveCat !== e.target) {
                     arActiveCat.classList.replace('ar-cat-selected', 'ar-cat-normal');
@@ -545,10 +570,8 @@
                 arActiveCat.style.zIndex = arZIndexCounter;
             }
             
-            // 操作する猫がいなければ何もしない
             if (!arActiveCat) return; 
 
-            // 以下、画面のどこを触っていても、arActiveCat に対して操作が行われる
             if (e.touches.length === 1) {
                 arIsDragging = true; 
                 arIsPinching = false;
@@ -569,7 +592,7 @@
 
         arCatsContainer.addEventListener('touchmove', (e) => { 
             if (!arActiveCat) return;
-            e.preventDefault(); // 画面全体のスクロールを防ぐ
+            e.preventDefault(); 
             
             if (arIsDragging && e.touches.length === 1) {
                 const dx = e.touches[0].clientX - arStartX;
@@ -586,7 +609,7 @@
                     e.touches[0].clientY - e.touches[1].clientY
                 );
                 let currentScale = arBaseScale * (currentDistance / arInitialDistance);
-                currentScale = Math.max(0.3, Math.min(currentScale, 4.0)); // 0.3倍〜4.0倍の制限
+                currentScale = Math.max(0.3, Math.min(currentScale, 4.0)); 
                 arActiveCat.dataset.scale = currentScale;
                 const x = arActiveCat.dataset.x;
                 const y = arActiveCat.dataset.y;
@@ -608,6 +631,10 @@
             arModal.classList.remove('hidden'); 
             arModal.classList.add('flex'); 
             
+            // 開いたときはメニューを隠す
+            arCatMenu.classList.add('hidden');
+            arCatMenu.classList.remove('flex');
+            
             arCatsContainer.innerHTML = '';
             arCatSelector.innerHTML = ''; 
             arActiveCat = null;
@@ -621,16 +648,14 @@
                     
                     btn.addEventListener('click', () => { 
                         if (arCatsContainer.children.length >= 3) {
-                            showCustomAlert('お知らせ', '一度に置ける猫は3匹までだニャ！<br>「やり直す」ボタンで消せるニャ。');
+                            showCustomAlert('お知らせ', '一度に置ける猫は3匹までだニャ！<br>「リセット」ボタンで消せるニャ。');
                             return;
                         }
 
                         const newCat = document.createElement('img');
                         newCat.src = CAT_DATA[catId].image;
-                        // 初期状態から「選択中（オレンジオーラ）」にして配置
                         newCat.className = "ar-active-cat ar-cat-selected absolute w-40 h-40 object-contain";
                         
-                        // 画面中央から少しずつズラして配置するための計算
                         let currentX = arCatsContainer.children.length * 20; 
                         let currentY = arCatsContainer.children.length * 20; 
                         let currentScale = 1;
@@ -643,7 +668,6 @@
                         newCat.style.left = '50%';
                         newCat.style.transform = `translate(calc(-50% + ${currentX}px), calc(-50% + ${currentY}px)) scale(${currentScale})`;
                         
-                        // 前のアクティブ猫のオーラを消し、新しく追加した猫をアクティブにする
                         if (arActiveCat && arActiveCat !== newCat) {
                             arActiveCat.classList.replace('ar-cat-selected', 'ar-cat-normal');
                         }
@@ -653,6 +677,10 @@
                         newCat.style.zIndex = arZIndexCounter;
 
                         arCatsContainer.appendChild(newCat);
+                        
+                        // 【追加】猫を追加したらメニューを自動で閉じる
+                        arCatMenu.classList.add('hidden');
+                        arCatMenu.classList.remove('flex');
                     }); 
                     arCatSelector.appendChild(btn); 
                 } 
@@ -679,7 +707,6 @@
         });
 
         document.getElementById('ar-shutter-btn').addEventListener('click', () => { 
-            // 撮影の瞬間だけ、選択中の「オレンジのオーラ」を消す
             if (arActiveCat) {
                 arActiveCat.classList.replace('ar-cat-selected', 'ar-cat-normal');
             }
@@ -706,7 +733,6 @@
             document.getElementById('ar-result-img').src = dataUrl; 
             document.getElementById('ar-result-modal').classList.remove('hidden'); document.getElementById('ar-result-modal').classList.add('flex'); 
             
-            // 撮影が終わったらオーラを元に戻す
             if (arActiveCat) {
                 arActiveCat.classList.replace('ar-cat-normal', 'ar-cat-selected');
             }
