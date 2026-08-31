@@ -80,10 +80,17 @@
         </div>
 
         <div class="ui-layer bottom-0 left-0 w-full p-3 pb-6 flex justify-between items-end gap-2">
+            <!-- 【変更】左側の3つのボタンをオリジナルイラストに差し替え -->
             <div class="flex flex-col gap-3">
-                <button id="go-garden-btn" class="bg-green-500 text-white w-14 h-14 rounded-full text-2xl shadow-lg interactive border-4 border-white">🏡</button>
-                <button id="open-ar-btn" class="bg-pink-400 text-white w-14 h-14 rounded-full text-2xl shadow-lg interactive border-4 border-white">✨</button>
-                <button id="open-minigame-btn" class="bg-orange-400 text-white w-14 h-14 rounded-full text-2xl shadow-lg interactive border-4 border-white transition-transform active:scale-95">🍊</button>
+                <button id="go-garden-btn" class="w-14 h-14 interactive transition-transform active:scale-95 drop-shadow-lg rounded-2xl overflow-hidden bg-white/50">
+                    <img src="./niwa.png" class="w-full h-full object-cover">
+                </button>
+                <button id="open-ar-btn" class="w-14 h-14 interactive transition-transform active:scale-95 drop-shadow-lg rounded-2xl overflow-hidden bg-white/50">
+                    <img src="./camera.png" class="w-full h-full object-cover">
+                </button>
+                <button id="open-minigame-btn" class="w-14 h-14 interactive transition-transform active:scale-95 drop-shadow-lg rounded-2xl overflow-hidden bg-white/50">
+                    <img src="./game.png" class="w-full h-full object-cover">
+                </button>
             </div>
             
             <div class="bg-white/95 backdrop-blur-md px-2 py-2 rounded-3xl shadow-lg flex flex-1 flex-col items-center justify-center interactive border-2 border-orange-200 max-w-[140px]">
@@ -100,9 +107,14 @@
                 </div>
             </div>
 
+            <!-- 【変更】右側の2つのボタンをオリジナルイラストに差し替え -->
             <div class="flex flex-col gap-3">
-                <button id="open-qr-btn" class="bg-yellow-400 text-white w-14 h-14 rounded-full text-2xl shadow-lg interactive border-4 border-white">📷</button>
-                <button id="open-zukan" class="bg-indigo-500 text-white w-14 h-14 rounded-full text-2xl shadow-lg interactive border-4 border-white">📖</button>
+                <button id="open-qr-btn" class="w-14 h-14 interactive transition-transform active:scale-95 drop-shadow-lg rounded-2xl overflow-hidden bg-white/50">
+                    <img src="./yomitori.png" class="w-full h-full object-cover">
+                </button>
+                <button id="open-zukan" class="w-14 h-14 interactive transition-transform active:scale-95 drop-shadow-lg rounded-2xl overflow-hidden bg-white/50">
+                    <img src="./zukan.png" class="w-full h-full object-cover">
+                </button>
             </div>
         </div>
     </div>
@@ -518,6 +530,7 @@
         let mgFlippedCards = [];
         let mgMatchedPairsInBoard = 0;
         let mgMissCount = 0; 
+        let mgMissStats = {}; 
 
         const mgScreen = document.getElementById('minigame-screen');
         const mgOverlay = document.getElementById('mg-overlay');
@@ -532,11 +545,8 @@
             return helperImg;
         }
 
-        // 【追加】ランダムに豆知識を表示する関数（タップで切り替え可能）
         window.showRandomMamechishiki = function(event) {
-            // クリックイベントの伝播を防ぐ（ボタン等に影響させないため）
             if (event) event.stopPropagation();
-            
             const mameContainer = document.getElementById('mg-mamechishiki');
             const randomFruit = MG_CITRUS_DATA[Math.floor(Math.random() * MG_CITRUS_DATA.length)];
             
@@ -587,6 +597,9 @@
             document.getElementById('mg-score').innerText = mgScore;
             document.getElementById('mg-time').innerText = mgTimeLeft;
             
+            mgMissStats = {};
+            MG_CITRUS_DATA.forEach(c => { mgMissStats[c.id] = 0; });
+            
             generateCards();
             
             mgTimer = setInterval(() => {
@@ -620,7 +633,6 @@
                         <div class="mg-card-back"></div>
                         <div class="mg-card-front">
                             <img src="${fruit.img}" class="mg-fruit-img">
-                            <span class="mg-fruit-name">${fruit.name}</span>
                         </div>
                     </div>
                 `;
@@ -689,6 +701,8 @@
                     seBu.currentTime = 0; seBu.play().catch(()=>{});
                     
                     mgMissCount++; 
+                    mgMissStats[card1.dataset.id]++;
+                    mgMissStats[card2.dataset.id]++;
                     
                     setTimeout(() => {
                         card1.classList.remove('flipped');
@@ -715,7 +729,6 @@
                 document.getElementById('mg-result-score').innerText = mgScore;
                 document.getElementById('mg-result-food').innerText = earnedFood;
                 
-                // 【変更】ゲーム終了時に完全ランダムな豆知識を初期表示する
                 window.showRandomMamechishiki();
 
                 document.getElementById('mg-start-btn').innerText = "もう一度！";
