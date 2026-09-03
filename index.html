@@ -140,7 +140,9 @@
     <div id="custom-alert-modal" class="fixed inset-0 bg-black/60 z-[7000] hidden flex-col items-center justify-center p-4 interactive"><div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-center border-4 border-orange-200"><h3 id="custom-alert-title" class="text-2xl font-black text-gray-800 mb-3"></h3><p id="custom-alert-message" class="text-base text-gray-600 font-bold mb-6"></p><button id="custom-alert-close" class="bg-orange-500 text-white px-10 py-3 rounded-full font-bold text-lg">OK</button></div></div>
     <div id="reset-confirm-modal" class="fixed inset-0 bg-black/80 z-[7000] hidden flex-col items-center justify-center p-4 interactive"><div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center border-4 border-red-300"><h3 class="text-2xl font-black text-red-600 mb-4">⚠️ データ初期化</h3><p class="text-sm text-gray-700 font-bold mb-6 text-left">記録がすべて消去されます。</p><label class="flex items-center justify-center gap-2 mb-6 bg-white p-4 rounded-xl cursor-pointer shadow-sm"><input type="checkbox" id="reset-checkbox" class="w-6 h-6 rounded accent-red-500"><span class="text-base font-bold text-gray-800">はい、初期化します</span></label><div class="flex gap-3 justify-center w-full"><button id="cancel-reset-btn" class="flex-1 bg-gray-300 py-3 rounded-full font-bold">やめる</button><button id="execute-reset-btn" class="flex-1 bg-gray-400 text-white py-3 rounded-full font-bold pointer-events-none" disabled>消去する</button></div></div></div>
 
-    <!-- AR撮影モード -->
+    <!-- ================================================== -->
+    <!-- AR撮影モード（スライダーを撤去し、超シンプル化） -->
+    <!-- ================================================== -->
     <div id="ar-modal" class="fixed inset-0 bg-black z-[8000] hidden flex-col interactive">
         <video id="ar-video" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline></video>
         
@@ -153,23 +155,6 @@
             
             <div class="bg-gradient-to-t from-black/80 via-black/40 to-transparent w-full pt-16 px-4 flex flex-col items-center gap-3 pointer-events-none" style="padding-bottom: max(env(safe-area-inset-bottom), 24px);">
                 
-                <!-- 【追加】影の調整スライダーパネル -->
-                <div id="ar-shadow-panel" class="hidden pointer-events-auto flex-col gap-2 w-full max-w-sm bg-black/60 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/20 shadow-lg mb-2">
-                    <p class="text-white text-[10px] font-bold text-center mb-1">影の調整（スライダーで動かせます）</p>
-                    <div class="flex items-center gap-3 w-full">
-                        <span class="text-white text-xs font-bold w-8 shrink-0 text-right">左右</span>
-                        <input type="range" id="slider-shadow-x" min="-150" max="150" value="0" class="flex-1 accent-orange-500">
-                    </div>
-                    <div class="flex items-center gap-3 w-full">
-                        <span class="text-white text-xs font-bold w-8 shrink-0 text-right">上下</span>
-                        <input type="range" id="slider-shadow-y" min="-150" max="150" value="0" class="flex-1 accent-orange-500">
-                    </div>
-                    <div class="flex items-center gap-3 w-full">
-                        <span class="text-white text-xs font-bold w-8 shrink-0 text-right">大小</span>
-                        <input type="range" id="slider-shadow-scale" min="0.3" max="3" step="0.1" value="1" class="flex-1 accent-orange-500">
-                    </div>
-                </div>
-
                 <div id="ar-cat-menu" class="hidden pointer-events-auto flex-col items-center gap-3 w-full max-w-sm bg-black/70 backdrop-blur-md p-4 rounded-3xl border border-white/30 shadow-2xl">
                     <p class="text-white text-xs font-bold text-center leading-relaxed">
                         猫をタップして追加するニャ！(最大3匹)<br>
@@ -183,6 +168,7 @@
                     <button id="ar-add-cat-btn" class="bg-orange-500 text-white px-4 py-3 rounded-full font-bold shadow-xl border-4 border-white active:scale-95 shrink-0 flex flex-col items-center justify-center leading-none gap-1">
                         <span class="text-xl">🐾</span><span class="text-[10px]">よぶ</span>
                     </button>
+                    <!-- スライダー機能は消去しましたが、影のON/OFFボタンは残してあります -->
                     <button id="ar-shadow-btn" class="bg-gray-200 text-gray-800 px-3 py-3 rounded-full font-bold shadow-xl border-4 border-gray-300 active:scale-95 shrink-0 flex flex-col items-center justify-center leading-none gap-1 opacity-50 pointer-events-none transition-opacity">
                         <span class="text-xl">🌑</span><span class="text-[10px]">カゲ</span>
                     </button>
@@ -540,7 +526,7 @@
         document.getElementById('close-qr-btn').addEventListener('click', () => { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); }); });
 
         // ==================================================
-        // AR撮影モード（影の個別調整スライダー追加）
+        // 【完全リニューアル】AR撮影モード（シンプル影ON/OFF・全画面操作）
         // ==================================================
         let arActiveCat = null;
         let arZIndexCounter = 100;
@@ -555,33 +541,9 @@
         const arCatMenu = document.getElementById('ar-cat-menu');
         const arAddCatBtn = document.getElementById('ar-add-cat-btn');
         const closeCatMenuBtn = document.getElementById('close-cat-menu-btn');
-        
         const arShadowBtn = document.getElementById('ar-shadow-btn');
-        const arShadowPanel = document.getElementById('ar-shadow-panel'); // 影調整パネル
         let arStream = null;
 
-        // 影パネルの表示・スライダー値の同期を行う関数
-        function updateShadowPanel() {
-            if (arActiveCat) {
-                const shadow = arActiveCat.querySelector('.ar-cat-shadow');
-                // 影が表示されていればパネルを表示
-                if (shadow && !shadow.classList.contains('hidden')) {
-                    arShadowPanel.classList.remove('hidden');
-                    arShadowPanel.classList.add('flex');
-                    document.getElementById('slider-shadow-x').value = arActiveCat.dataset.sx || 0;
-                    document.getElementById('slider-shadow-y').value = arActiveCat.dataset.sy || 0;
-                    document.getElementById('slider-shadow-scale').value = arActiveCat.dataset.sscale || 1;
-                } else {
-                    arShadowPanel.classList.add('hidden');
-                    arShadowPanel.classList.remove('flex');
-                }
-            } else {
-                arShadowPanel.classList.add('hidden');
-                arShadowPanel.classList.remove('flex');
-            }
-        }
-
-        // 選択された猫を切り替える関数
         function selectArCat(catElement) {
             if (arActiveCat && arActiveCat !== catElement) {
                 const oldImg = arActiveCat.querySelector('.ar-cat-image');
@@ -595,7 +557,6 @@
             arActiveCat.style.zIndex = arZIndexCounter;
 
             arShadowBtn.classList.remove('opacity-50', 'pointer-events-none');
-            updateShadowPanel(); // 選択した猫に合わせてパネルを更新
         }
 
         function deselectArCat() {
@@ -605,7 +566,6 @@
             }
             arActiveCat = null;
             arShadowBtn.classList.add('opacity-50', 'pointer-events-none');
-            updateShadowPanel();
         }
 
         arAddCatBtn.addEventListener('click', () => {
@@ -617,32 +577,14 @@
             arCatMenu.classList.remove('flex');
         });
 
-        // 影ボタンを押した時の処理
+        // 影ボタンを押した時の処理（表示のON/OFFのみ）
         arShadowBtn.addEventListener('click', () => {
             if (arActiveCat) {
                 const shadow = arActiveCat.querySelector('.ar-cat-shadow');
                 if (shadow) {
                     shadow.classList.toggle('hidden');
-                    updateShadowPanel(); // 影のON/OFFに合わせてパネルを開閉
                 }
             }
-        });
-
-        // スライダー操作イベントの登録
-        ['x', 'y', 'scale'].forEach(type => {
-            document.getElementById(`slider-shadow-${type}`).addEventListener('input', (e) => {
-                if (!arActiveCat) return;
-                // 値をデータ属性に保存
-                arActiveCat.dataset[`s${type}`] = e.target.value;
-                const shadow = arActiveCat.querySelector('.ar-cat-shadow');
-                if (shadow) {
-                    const sx = arActiveCat.dataset.sx || 0;
-                    const sy = arActiveCat.dataset.sy || 0;
-                    const sscale = arActiveCat.dataset.sscale || 1;
-                    // 影のtransformを更新
-                    shadow.style.transform = `translate(calc(-50% + ${sx}px), ${sy}px) scale(${sscale})`;
-                }
-            });
         });
 
         arCatsContainer.addEventListener('touchstart', (e) => { 
@@ -735,14 +677,10 @@
                         const newCatContainer = document.createElement('div');
                         newCatContainer.className = "ar-active-cat absolute w-40 h-40 pointer-events-auto touch-none";
                         
+                        // 【変更】猫と影を「全く同じサイズ・同じ位置」に完全に重ねる
                         const shadowImg = document.createElement('img');
                         shadowImg.src = './sample.png';
-                        // 影の初期位置などを設定
-                        shadowImg.className = "ar-cat-shadow absolute opacity-60 hidden pointer-events-none";
-                        shadowImg.style.top = "80%";
-                        shadowImg.style.left = "50%";
-                        shadowImg.style.width = "100%";
-                        shadowImg.style.transform = "translate(-50%, 0) scale(1)";
+                        shadowImg.className = "ar-cat-shadow absolute inset-0 w-full h-full object-contain opacity-60 hidden pointer-events-none";
                         
                         const catImg = document.createElement('img');
                         catImg.src = CAT_DATA[catId].image;
@@ -758,10 +696,6 @@
                         newCatContainer.dataset.x = currentX;
                         newCatContainer.dataset.y = currentY;
                         newCatContainer.dataset.scale = currentScale;
-                        // 影の初期データを保存
-                        newCatContainer.dataset.sx = 0;
-                        newCatContainer.dataset.sy = 0;
-                        newCatContainer.dataset.sscale = 1;
 
                         newCatContainer.style.top = '50%';
                         newCatContainer.style.left = '50%';
@@ -817,19 +751,19 @@
             else { drawH = window.innerWidth / videoRatio; offsetY = (window.innerHeight - drawH) / 2; } 
             ctx.drawImage(arVideo, offsetX, offsetY, drawW, drawH); 
             
+            // 【変更】猫と影のコンテナ全体の位置を描画に使うため、自動でピッタリ重なります
             const cats = document.querySelectorAll('.ar-active-cat');
             cats.forEach(catContainer => {
                 const shadowImg = catContainer.querySelector('.ar-cat-shadow');
                 const catImg = catContainer.querySelector('.ar-cat-image');
+                const containerRect = catContainer.getBoundingClientRect(); // コンテナの枠を取得
                 
+                // 同じコンテナ枠（位置とサイズ）に描画することで完璧に重なる
                 if (shadowImg && !shadowImg.classList.contains('hidden')) {
-                    const sRect = shadowImg.getBoundingClientRect(); 
-                    ctx.drawImage(shadowImg, sRect.left, sRect.top, sRect.width, sRect.height); 
+                    ctx.drawImage(shadowImg, containerRect.left, containerRect.top, containerRect.width, containerRect.height); 
                 }
-                
                 if (catImg) {
-                    const cRect = catImg.getBoundingClientRect(); 
-                    ctx.drawImage(catImg, cRect.left, cRect.top, cRect.width, cRect.height); 
+                    ctx.drawImage(catImg, containerRect.left, containerRect.top, containerRect.width, containerRect.height); 
                 }
             });
             
