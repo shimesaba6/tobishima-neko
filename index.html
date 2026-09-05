@@ -28,8 +28,6 @@
         .face-right { transform: scaleX(1); }
         .cat-wrapper { transition: transform 0.3s ease, opacity 0.5s ease, width 0.3s ease, height 0.3s ease; filter: drop-shadow(0 6px 6px rgba(0,0,0,0.5)); }
         .fade-out { opacity: 0; }
-        #zukan-modal { display: none; }
-        #zukan-modal.show { display: flex; }
 
         .leaflet-tile-pane { transition: filter 2s; }
         body.is-sunset .leaflet-tile-pane { filter: sepia(0.4) hue-rotate(-15deg) saturate(1.5) brightness(0.9); }
@@ -133,15 +131,11 @@
         <div id="garden-container" class="w-full h-full relative"></div>
     </div>
     
-    <!-- ================================================== -->
-    <!-- 【アップデート】ねこ図鑑モーダル（レイアウト大幅改善） -->
-    <!-- ================================================== -->
+    <!-- ねこ図鑑モーダル -->
     <div id="zukan-modal" class="fixed inset-0 bg-black/60 z-[3000] hidden items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-[#fdf6e3] rounded-3xl p-5 w-full max-w-sm shadow-2xl relative interactive border-4 border-indigo-200 flex flex-col max-h-[90dvh]">
-            
-            <!-- ヘッダー（タイトル・収集率・閉じるボタン） -->
             <div class="flex justify-between items-start mb-2">
-                <div class="w-8"></div> <!-- バランス用のスペーサー -->
+                <div class="w-8"></div>
                 <div class="text-center flex-1">
                     <h2 class="text-2xl font-black text-indigo-800 leading-none">ねこ図鑑</h2>
                     <p id="zukan-progress" class="text-sm font-bold text-indigo-600 mt-1">0 / 0 種類</p>
@@ -150,27 +144,20 @@
             </div>
             
             <p class="text-center text-[10px] text-orange-600 font-bold mb-3">※まるい画像をタップで拡大</p>
-            
             <div id="cat-detail" class="bg-white rounded-2xl p-4 mb-3 min-h-[90px] flex items-center justify-center text-center shadow-inner border border-gray-200 shrink-0">
                 <p class="text-gray-500 font-bold">ねこをタップするニャ</p>
             </div>
-            
-            <!-- スクロール領域が大幅に広がりました -->
             <div class="grid grid-cols-3 gap-3 overflow-y-auto p-1 flex-1 relative" id="zukan-list"></div>
-            
-            <!-- 初期化ボタンは最下部に控えめに配置 -->
             <div class="mt-2 text-center shrink-0">
                 <p id="open-reset-btn" class="text-[10px] text-gray-400 font-bold underline cursor-pointer inline-block p-2">データを初期化する</p>
             </div>
         </div>
     </div>
 
-    <!-- 画像拡大モーダル -->
     <div id="image-modal" class="fixed inset-0 bg-black/80 z-[5000] hidden flex-col items-center justify-center p-4 interactive"><div class="w-full max-w-md flex justify-end mb-2 pr-4"><button id="close-image-modal" class="text-white text-5xl font-bold">&times;</button></div><img id="enlarged-image" src="" class="w-[90%] max-w-[300px] object-contain filter drop-shadow-lg"></div>
-    
-    <!-- QR・アラート系モーダル -->
     <div id="qr-modal" class="fixed inset-0 bg-black/90 z-[6000] hidden flex-col items-center justify-center p-4 interactive"><h2 class="text-white text-xl font-bold mb-4">シークレットQRを探せ！</h2><div id="qr-reader" class="w-full max-w-sm bg-white rounded-xl overflow-hidden mb-6"></div><button id="close-qr-btn" class="bg-red-500 text-white px-8 py-3 rounded-full font-bold text-lg">やめる</button></div>
     <div id="custom-alert-modal" class="fixed inset-0 bg-black/60 z-[7000] hidden flex-col items-center justify-center p-4 interactive"><div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-center border-4 border-orange-200"><h3 id="custom-alert-title" class="text-2xl font-black text-gray-800 mb-3"></h3><p id="custom-alert-message" class="text-base text-gray-600 font-bold mb-6"></p><button id="custom-alert-close" class="bg-orange-500 text-white px-10 py-3 rounded-full font-bold text-lg">OK</button></div></div>
+    
     <div id="reset-confirm-modal" class="fixed inset-0 bg-black/80 z-[7000] hidden flex-col items-center justify-center p-4 interactive"><div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center border-4 border-red-300"><h3 class="text-2xl font-black text-red-600 mb-4">⚠️ データ初期化</h3><p class="text-sm text-gray-700 font-bold mb-6 text-left">記録がすべて消去されます。</p><label class="flex items-center justify-center gap-2 mb-6 bg-white p-4 rounded-xl cursor-pointer shadow-sm"><input type="checkbox" id="reset-checkbox" class="w-6 h-6 rounded accent-red-500"><span class="text-base font-bold text-gray-800">はい、初期化します</span></label><div class="flex gap-3 justify-center w-full"><button id="cancel-reset-btn" class="flex-1 bg-gray-300 py-3 rounded-full font-bold">やめる</button><button id="execute-reset-btn" class="flex-1 bg-gray-400 text-white py-3 rounded-full font-bold pointer-events-none" disabled>消去する</button></div></div></div>
 
     <!-- AR撮影モード -->
@@ -291,7 +278,6 @@
 
         let currentIslandKey = null, isCatSpawned = false;
         let zukanData = JSON.parse(localStorage.getItem('tobishima_zukan')) || [];
-        
         let activeOtomoId = localStorage.getItem('tobishima_otomo') || null;
         let otomoMarker = null;
 
@@ -319,6 +305,120 @@
             document.getElementById('food-count').innerHTML = `${foodCount}`;
         }
 
+        // ==========================================
+        // UI操作・遷移イベント
+        // ==========================================
+        document.getElementById('start-btn').addEventListener('click', () => {
+            catVoice.play().then(() => { catVoice.pause(); catVoice.currentTime = 0; }).catch(() => {});
+            document.getElementById('start-screen').style.opacity = '0'; 
+            setTimeout(() => { document.getElementById('start-screen').style.display = 'none'; }, 500); 
+            document.getElementById('loading').style.display = 'flex';
+            if (justGotDailyBonus) { setTimeout(() => { showCustomAlert('🎁 ログインボーナス！', '新しい1日が始まったニャ！<br>エサを 3個 プレゼントするニャ！'); }, 1000); }
+            if (navigator.geolocation) { gpsWatchId = navigator.geolocation.watchPosition((p) => { let lat = p.coords.latitude, lng = p.coords.longitude; if (DEBUG_MODE) { lat = DUMMY_LAT; lng = DUMMY_LNG; } updateLocation(lat, lng); }, (e) => {}, { enableHighAccuracy: true, maximumAge: 2000, timeout: 5000 }); }
+        });
+
+        document.getElementById('go-garden-btn').addEventListener('click', () => {
+            document.getElementById('map-screen').style.display = 'none'; document.getElementById('garden-screen').style.display = 'block'; const gc = document.getElementById('garden-container'); gc.innerHTML = '';
+            let activeZukan = [...zukanData]; activeZukan.sort(() => 0.5 - Math.random()); let displayCats = activeZukan.slice(0, 5);
+            displayCats.forEach(id => {
+                if (CAT_DATA[id]) {
+                    const wrapper = document.createElement('div'); wrapper.className = 'garden-cat absolute w-24 h-24 interactive'; wrapper.style.transition = 'top 3s linear, left 3s linear, transform 0.5s'; wrapper.style.top = `${Math.random() * 20 + 65}%`; wrapper.style.left = `${Math.random() * 80 + 5}%`;
+                    const img = document.createElement('img'); img.src = CAT_DATA[id].image; img.className = 'w-full h-full object-contain'; 
+                    const bubble = document.createElement('div'); bubble.innerHTML = '🐟'; bubble.className = 'absolute -top-4 left-1/2 transform -translate-x-1/2 bg-white rounded-full px-2 py-0.5 shadow-md border border-gray-200 text-sm animate-bounce hidden pointer-events-none';
+                    wrapper.appendChild(img); wrapper.appendChild(bubble); gc.appendChild(wrapper);
+
+                    let isHungry = Math.random() < 0.3; if (isHungry) bubble.classList.remove('hidden');
+                    wrapper.addEventListener('click', () => { 
+                        if (isHungry) {
+                            if (foodCount > 0) { foodCount--; document.getElementById('food-count').innerHTML = foodCount; localStorage.setItem('tobishima_food', foodCount); isHungry = false; bubble.classList.add('hidden'); catHungryVoice.currentTime = 0; catHungryVoice.play().catch(()=>{}); activeOtomoId = id; localStorage.setItem('tobishima_otomo', activeOtomoId); showCustomAlert('おとも決定！', `「${CAT_DATA[id].name}」が一緒に散歩してくれることになったニャ！<br>マップに戻ってみよう！`); } 
+                            else { showCustomAlert('エサがないニャ', 'エサを持っていないとあげられないニャ。<br>歩いて見つけてくるニャ！'); }
+                        } else { catVoice.currentTime = 0; catVoice.play().catch(()=>{}); wrapper.classList.add('bounce-active'); setTimeout(() => wrapper.classList.remove('bounce-active'), 1000); }
+                    }); 
+                    function move() { 
+                        let nextActionTime = Math.random() * 6000 + 2000;
+                        if (isToyActive && toyPos) {
+                            if (Math.random() < 0.6) { wrapper.style.transition = 'top 0.8s ease-out, left 0.8s ease-out, transform 0.2s'; let targetL = toyPos.x + (Math.random() * 10 - 5), targetT = toyPos.y + (Math.random() * 10 - 5); wrapper.classList.remove('face-left','face-right'); wrapper.classList.add(parseFloat(wrapper.style.left) < targetL ? 'face-right' : 'face-left'); wrapper.style.top = `${targetT}%`; wrapper.style.left = `${targetL}%`; if(Math.random() < 0.5) wrapper.classList.add('bounce-active'); setTimeout(() => wrapper.classList.remove('bounce-active'), 500); nextActionTime = 1000 + Math.random() * 1000; } 
+                            else { nextActionTime = 2000; }
+                        } else {
+                            if(Math.random() < 0.3) { wrapper.style.transition = 'top 3s linear, left 3s linear, transform 0.5s'; let l = Math.random() * 80 + 5; wrapper.classList.remove('face-left','face-right'); wrapper.classList.add(parseFloat(wrapper.style.left) < l ? 'face-right' : 'face-left'); wrapper.style.top = `${Math.random() * 20 + 65}%`; wrapper.style.left = `${l}%`; }
+                        } setTimeout(move, nextActionTime); 
+                    } move();
+                }
+            });
+        });
+
+        document.getElementById('back-map-btn').addEventListener('click', () => { 
+            document.getElementById('garden-screen').style.display = 'none'; 
+            document.getElementById('map-screen').style.display = 'block'; 
+            map.invalidateSize(); 
+            isToyActive = false; 
+            toyBtn.classList.replace('bg-red-500', 'bg-yellow-400'); 
+            toyBtn.classList.replace('text-white', 'text-gray-800'); 
+            toyBtn.innerText = '🧶 あそぶ'; 
+            toyIcon.classList.add('hidden'); 
+            toyPos = null; 
+        });
+
+        // 完全にクリーンになった図鑑表示処理
+        document.getElementById('open-zukan').addEventListener('click', () => { 
+            const zl = document.getElementById('zukan-list'); 
+            zl.innerHTML = ''; 
+            
+            const totalCats = Object.keys(CAT_DATA).length;
+            const collectedCount = zukanData.filter(id => CAT_DATA[id]).length;
+            document.getElementById('zukan-progress').innerText = `${collectedCount} / ${totalCats} 種類`;
+
+            for (const key in CAT_DATA) { 
+                const cat = CAT_DATA[key]; 
+                const isDisc = zukanData.includes(key); 
+                const el = document.createElement('div'); 
+                el.className = "flex flex-col items-center p-2 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer"; 
+                el.innerHTML = `<img src="${cat.image}" class="w-16 h-16 object-contain mb-2" style="${isDisc ? "" : "filter: brightness(0) invert(0.8);"}"><p class="text-xs font-bold">${isDisc ? cat.name : "？？？"}</p>`; 
+                
+                el.addEventListener('click', () => { 
+                    if (isDisc) { 
+                        document.getElementById('cat-detail').innerHTML = `<div class="flex items-center gap-4 w-full"><div id="detail-img-btn" class="w-20 h-20 shrink-0 bg-orange-100 rounded-full flex items-center justify-center border-4 border-orange-200 cursor-pointer"><img src="${cat.image}" class="w-16 h-16 object-contain pointer-events-none"></div><div class="text-left"><p class="font-black text-indigo-800 text-xl">${cat.name}</p><p class="text-sm text-gray-700 mt-2 font-medium">${cat.description}</p></div></div>`; 
+                        document.getElementById('detail-img-btn').addEventListener('click', () => { 
+                            document.getElementById('enlarged-image').src = cat.image; 
+                            document.getElementById('image-modal').classList.remove('hidden'); 
+                            document.getElementById('image-modal').classList.add('flex'); 
+                        }); 
+                    } else { 
+                        document.getElementById('cat-detail').innerHTML = `<div class="flex items-center gap-4 w-full"><div class="w-20 h-20 shrink-0 bg-gray-200 rounded-full flex items-center justify-center text-3xl text-gray-400 font-black border-4 border-gray-300">？</div><div class="text-left"><p class="font-black text-gray-500 text-xl">？？？</p><p class="text-sm text-gray-500 mt-2 font-medium">まだであっていないニャ</p></div></div>`; 
+                    } 
+                }); 
+                zl.appendChild(el); 
+            } 
+            document.getElementById('zukan-modal').classList.remove('hidden'); 
+            document.getElementById('zukan-modal').classList.add('flex'); 
+        });
+
+        document.getElementById('close-zukan').addEventListener('click', () => {
+            document.getElementById('zukan-modal').classList.add('hidden');
+            document.getElementById('zukan-modal').classList.remove('flex');
+        });
+
+        document.getElementById('close-image-modal').addEventListener('click', () => { 
+            document.getElementById('image-modal').classList.add('hidden'); 
+            document.getElementById('image-modal').classList.remove('flex'); 
+        });
+
+        const customAlertModal = document.getElementById('custom-alert-modal'), customAlertTitle = document.getElementById('custom-alert-title'), customAlertMessage = document.getElementById('custom-alert-message');
+        function showCustomAlert(title, message) { customAlertTitle.innerHTML = title; customAlertMessage.innerHTML = message; customAlertModal.classList.remove('hidden'); customAlertModal.classList.add('flex'); }
+        document.getElementById('custom-alert-close').addEventListener('click', () => { customAlertModal.classList.add('hidden'); customAlertModal.classList.remove('flex'); });
+
+        document.getElementById('open-reset-btn').addEventListener('click', () => { document.getElementById('reset-checkbox').checked = false; let btn = document.getElementById('execute-reset-btn'); btn.disabled = true; btn.className = "flex-1 bg-gray-400 text-white py-3 rounded-full font-bold pointer-events-none"; document.getElementById('reset-confirm-modal').classList.remove('hidden'); document.getElementById('reset-confirm-modal').classList.add('flex'); });
+        document.getElementById('cancel-reset-btn').addEventListener('click', () => { document.getElementById('reset-confirm-modal').classList.add('hidden'); document.getElementById('reset-confirm-modal').classList.remove('flex'); });
+        document.getElementById('reset-checkbox').addEventListener('change', (e) => { let btn = document.getElementById('execute-reset-btn'); if (e.target.checked) { btn.disabled = false; btn.className = "flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-full font-bold"; } else { btn.disabled = true; btn.className = "flex-1 bg-gray-400 text-white py-3 rounded-full font-bold pointer-events-none"; } });
+        document.getElementById('execute-reset-btn').addEventListener('click', () => { localStorage.removeItem('tobishima_zukan'); localStorage.removeItem('tobishima_otomo'); localStorage.removeItem('tobishima_food'); localStorage.removeItem('tobishima_last_login'); zukanData = []; activeOtomoId = null; foodCount = 3; distanceWalked = 0; document.getElementById('food-count').innerHTML = `3`; document.getElementById('distance-progress').innerText = `あと ${DISTANCE_TO_FOOD}m`; document.getElementById('distance-bar').style.width = `0%`; document.getElementById('reset-confirm-modal').classList.add('hidden'); document.getElementById('reset-confirm-modal').classList.remove('flex'); document.getElementById('zukan-modal').classList.add('hidden'); document.getElementById('zukan-modal').classList.remove('flex'); showCustomAlert('データ初期化完了', '図鑑とエサのデータをリセットしました。'); });
+
+        let html5QrCode = null;
+        document.getElementById('open-qr-btn').addEventListener('click', () => { document.getElementById('qr-modal').classList.remove('hidden'); document.getElementById('qr-modal').classList.add('flex'); html5QrCode = new Html5Qrcode("qr-reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, (dec) => { if(CAT_DATA[dec]) { html5QrCode.stop().then(() => { document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); addToZukan(dec); catVoice.currentTime = 0; catVoice.play().catch(()=>{}); showCustomAlert('🎉 シークレット発見！', `「${CAT_DATA[dec].name}」をゲットしたニャ！`); }); } }, (err) => {}).catch(err => { showCustomAlert('エラー', 'カメラの起動に失敗しました。'); document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); }); });
+        document.getElementById('close-qr-btn').addEventListener('click', () => { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); }); });
+
+        // ==========================================
+        // 庭モードのタッチ（おもちゃ）
+        // ==========================================
         let isToyActive = false, toyPos = null; 
         const toyBtn = document.getElementById('toy-btn'), toyIcon = document.getElementById('toy-icon'), gardenScreen = document.getElementById('garden-screen');
 
@@ -343,15 +443,9 @@
         gardenScreen.addEventListener('mousemove', (e) => updateToyPosition(e.clientX, e.clientY));
         gardenScreen.addEventListener('touchmove', (e) => { if (isToyActive) e.preventDefault(); updateToyPosition(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
 
-        const customAlertModal = document.getElementById('custom-alert-modal'), customAlertTitle = document.getElementById('custom-alert-title'), customAlertMessage = document.getElementById('custom-alert-message');
-        function showCustomAlert(title, message) { customAlertTitle.innerHTML = title; customAlertMessage.innerHTML = message; customAlertModal.classList.remove('hidden'); customAlertModal.classList.add('flex'); }
-        document.getElementById('custom-alert-close').addEventListener('click', () => { customAlertModal.classList.add('hidden'); customAlertModal.classList.remove('flex'); });
-
-        document.getElementById('open-reset-btn').addEventListener('click', () => { document.getElementById('reset-checkbox').checked = false; let btn = document.getElementById('execute-reset-btn'); btn.disabled = true; btn.className = "flex-1 bg-gray-400 text-white py-3 rounded-full font-bold pointer-events-none"; document.getElementById('reset-confirm-modal').classList.remove('hidden'); document.getElementById('reset-confirm-modal').classList.add('flex'); });
-        document.getElementById('cancel-reset-btn').addEventListener('click', () => { document.getElementById('reset-confirm-modal').classList.add('hidden'); document.getElementById('reset-confirm-modal').classList.remove('flex'); });
-        document.getElementById('reset-checkbox').addEventListener('change', (e) => { let btn = document.getElementById('execute-reset-btn'); if (e.target.checked) { btn.disabled = false; btn.className = "flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-full font-bold"; } else { btn.disabled = true; btn.className = "flex-1 bg-gray-400 text-white py-3 rounded-full font-bold pointer-events-none"; } });
-        document.getElementById('execute-reset-btn').addEventListener('click', () => { localStorage.removeItem('tobishima_zukan'); localStorage.removeItem('tobishima_otomo'); localStorage.removeItem('tobishima_food'); localStorage.removeItem('tobishima_last_login'); zukanData = []; activeOtomoId = null; foodCount = 3; distanceWalked = 0; document.getElementById('food-count').innerHTML = `3`; document.getElementById('distance-progress').innerText = `あと ${DISTANCE_TO_FOOD}m`; document.getElementById('distance-bar').style.width = `0%`; document.getElementById('reset-confirm-modal').classList.add('hidden'); document.getElementById('reset-confirm-modal').classList.remove('flex'); document.getElementById('zukan-modal').classList.remove('show'); showCustomAlert('データ初期化完了', '図鑑とエサのデータをリセットしました。'); });
-
+        // ==========================================
+        // マップ・GPS機能
+        // ==========================================
         const map = L.map('map', { zoomControl: false }).setView([35.681236, 139.767125], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
         const BASE_ICON_SIZE = 80;
@@ -499,90 +593,9 @@
             if (isIsland) { if (!window.spawnTimer) window.spawnTimer = setInterval(() => { if (!isCatSpawned && Math.random() < 0.2) spawnRandomCat(playerMarker.getLatLng()); }, 10000); } else { document.getElementById('island-name').innerText = "ここはねこがいないエリアみたい"; if(window.spawnTimer) { clearInterval(window.spawnTimer); window.spawnTimer = null; } }
         }
 
-        document.getElementById('start-btn').addEventListener('click', () => {
-            catVoice.play().then(() => { catVoice.pause(); catVoice.currentTime = 0; }).catch(() => {});
-            document.getElementById('start-screen').style.opacity = '0'; setTimeout(() => { document.getElementById('start-screen').style.display = 'none'; }, 500); document.getElementById('loading').style.display = 'flex';
-            if (justGotDailyBonus) { setTimeout(() => { showCustomAlert('🎁 ログインボーナス！', '新しい1日が始まったニャ！<br>エサを 3個 プレゼントするニャ！'); }, 1000); }
-            if (navigator.geolocation) { gpsWatchId = navigator.geolocation.watchPosition((p) => { let lat = p.coords.latitude, lng = p.coords.longitude; if (DEBUG_MODE) { lat = DUMMY_LAT; lng = DUMMY_LNG; } updateLocation(lat, lng); }, (e) => {}, { enableHighAccuracy: true, maximumAge: 2000, timeout: 5000 }); }
-        });
-
-        document.getElementById('go-garden-btn').addEventListener('click', () => {
-            document.getElementById('map-screen').style.display = 'none'; document.getElementById('garden-screen').style.display = 'block'; const gc = document.getElementById('garden-container'); gc.innerHTML = '';
-            let activeZukan = [...zukanData]; activeZukan.sort(() => 0.5 - Math.random()); let displayCats = activeZukan.slice(0, 5);
-            displayCats.forEach(id => {
-                if (CAT_DATA[id]) {
-                    const wrapper = document.createElement('div'); wrapper.className = 'garden-cat absolute w-24 h-24 interactive'; wrapper.style.transition = 'top 3s linear, left 3s linear, transform 0.5s'; wrapper.style.top = `${Math.random() * 20 + 65}%`; wrapper.style.left = `${Math.random() * 80 + 5}%`;
-                    const img = document.createElement('img'); img.src = CAT_DATA[id].image; img.className = 'w-full h-full object-contain'; 
-                    const bubble = document.createElement('div'); bubble.innerHTML = '🐟'; bubble.className = 'absolute -top-4 left-1/2 transform -translate-x-1/2 bg-white rounded-full px-2 py-0.5 shadow-md border border-gray-200 text-sm animate-bounce hidden pointer-events-none';
-                    wrapper.appendChild(img); wrapper.appendChild(bubble); gc.appendChild(wrapper);
-
-                    let isHungry = Math.random() < 0.3; if (isHungry) bubble.classList.remove('hidden');
-                    wrapper.addEventListener('click', () => { 
-                        if (isHungry) {
-                            if (foodCount > 0) { foodCount--; document.getElementById('food-count').innerHTML = foodCount; localStorage.setItem('tobishima_food', foodCount); isHungry = false; bubble.classList.add('hidden'); catHungryVoice.currentTime = 0; catHungryVoice.play().catch(()=>{}); activeOtomoId = id; localStorage.setItem('tobishima_otomo', activeOtomoId); showCustomAlert('おとも決定！', `「${CAT_DATA[id].name}」が一緒に散歩してくれることになったニャ！<br>マップに戻ってみよう！`); } 
-                            else { showCustomAlert('エサがないニャ', 'エサを持っていないとあげられないニャ。<br>歩いて見つけてくるニャ！'); }
-                        } else { catVoice.currentTime = 0; catVoice.play().catch(()=>{}); wrapper.classList.add('bounce-active'); setTimeout(() => wrapper.classList.remove('bounce-active'), 1000); }
-                    }); 
-                    function move() { 
-                        let nextActionTime = Math.random() * 6000 + 2000;
-                        if (isToyActive && toyPos) {
-                            if (Math.random() < 0.6) { wrapper.style.transition = 'top 0.8s ease-out, left 0.8s ease-out, transform 0.2s'; let targetL = toyPos.x + (Math.random() * 10 - 5), targetT = toyPos.y + (Math.random() * 10 - 5); wrapper.classList.remove('face-left','face-right'); wrapper.classList.add(parseFloat(wrapper.style.left) < targetL ? 'face-right' : 'face-left'); wrapper.style.top = `${targetT}%`; wrapper.style.left = `${targetL}%`; if(Math.random() < 0.5) wrapper.classList.add('bounce-active'); setTimeout(() => wrapper.classList.remove('bounce-active'), 500); nextActionTime = 1000 + Math.random() * 1000; } 
-                            else { nextActionTime = 2000; }
-                        } else {
-                            if(Math.random() < 0.3) { wrapper.style.transition = 'top 3s linear, left 3s linear, transform 0.5s'; let l = Math.random() * 80 + 5; wrapper.classList.remove('face-left','face-right'); wrapper.classList.add(parseFloat(wrapper.style.left) < l ? 'face-right' : 'face-left'); wrapper.style.top = `${Math.random() * 20 + 65}%`; wrapper.style.left = `${l}%`; }
-                        } setTimeout(move, nextActionTime); 
-                    } move();
-                }
-            });
-        });
-        document.getElementById('back-map-btn').addEventListener('click', () => { document.getElementById('garden-screen').style.display = 'none'; document.getElementById('map-screen').style.display = 'block'; map.invalidateSize(); isToyActive = false; toyBtn.classList.replace('bg-red-500', 'bg-yellow-400'); toyBtn.classList.replace('text-white', 'text-gray-800'); toyBtn.innerText = '🧶 あそぶ'; toyIcon.classList.add('hidden'); toyPos = null; });
-
-        // ==================================================
-        // 【アップデート】ねこ図鑑の表示処理
-        // ==================================================
-        document.getElementById('open-zukan').addEventListener('click', () => { 
-            const zl = document.getElementById('zukan-list'); 
-            zl.innerHTML = ''; 
-            
-            // 収集率の計算と表示を更新
-            const totalCats = Object.keys(CAT_DATA).length;
-            const collectedCount = zukanData.filter(id => CAT_DATA[id]).length;
-            document.getElementById('zukan-progress').innerText = `${collectedCount} / ${totalCats} 種類`;
-
-            for (const key in CAT_DATA) { 
-                const cat = CAT_DATA[key]; 
-                const isDisc = zukanData.includes(key); 
-                const el = document.createElement('div'); 
-                el.className = "flex flex-col items-center p-2 bg-white rounded-xl shadow-sm border border-gray-100 cursor-pointer"; 
-                el.innerHTML = `<img src="${cat.image}" class="w-16 h-16 object-contain mb-2" style="${isDisc ? "" : "filter: brightness(0) invert(0.8);"}"><p class="text-xs font-bold">${isDisc ? cat.name : "？？？"}</p>`; 
-                
-                el.addEventListener('click', () => { 
-                    if (isDisc) { 
-                        document.getElementById('cat-detail').innerHTML = `<div class="flex items-center gap-4 w-full"><div id="detail-img-btn" class="w-20 h-20 shrink-0 bg-orange-100 rounded-full flex items-center justify-center border-4 border-orange-200 cursor-pointer"><img src="${cat.image}" class="w-16 h-16 object-contain pointer-events-none"></div><div class="text-left"><p class="font-black text-indigo-800 text-xl">${cat.name}</p><p class="text-sm text-gray-700 mt-2 font-medium">${cat.description}</p></div></div>`; 
-                        document.getElementById('detail-img-btn').addEventListener('click', () => { document.getElementById('enlarged-image').src = cat.image; document.getElementById('image-modal').classList.remove('hidden'); document.getElementById('image-modal').classList.add('flex'); }); 
-                    } else { 
-                        document.getElementById('cat-detail').innerHTML = `<div class="flex items-center gap-4 w-full"><div class="w-20 h-20 shrink-0 bg-gray-200 rounded-full flex items-center justify-center text-3xl text-gray-400 font-black border-4 border-gray-300">？</div><div class="text-left"><p class="font-black text-gray-500 text-xl">？？？</p><p class="text-sm text-gray-500 mt-2 font-medium">まだであっていないニャ</p></div></div>`; 
-                    } 
-                }); 
-                zl.appendChild(el); 
-            } 
-            document.getElementById('zukan-modal').classList.remove('hidden'); 
-            document.getElementById('zukan-modal').classList.add('flex'); 
-        });
-
-        // 閉じるボタンのイベント
-        document.getElementById('close-zukan').addEventListener('click', () => {
-            document.getElementById('zukan-modal').classList.add('hidden');
-            document.getElementById('zukan-modal').classList.remove('flex');
-        });
-        
-        document.getElementById('close-image-modal').addEventListener('click', () => { document.getElementById('image-modal').classList.add('hidden'); document.getElementById('image-modal').classList.remove('flex'); });
-
-        let html5QrCode = null;
-        document.getElementById('open-qr-btn').addEventListener('click', () => { document.getElementById('qr-modal').classList.remove('hidden'); document.getElementById('qr-modal').classList.add('flex'); html5QrCode = new Html5Qrcode("qr-reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, (dec) => { if(CAT_DATA[dec]) { html5QrCode.stop().then(() => { document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); addToZukan(dec); catVoice.currentTime = 0; catVoice.play().catch(()=>{}); showCustomAlert('🎉 シークレット発見！', `「${CAT_DATA[dec].name}」をゲットしたニャ！`); }); } }, (err) => {}).catch(err => { showCustomAlert('エラー', 'カメラの起動に失敗しました。'); document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); }); });
-        document.getElementById('close-qr-btn').addEventListener('click', () => { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); }); });
-
-        // ARモードの処理
+        // ==========================================
+        // AR撮影モード
+        // ==========================================
         let arActiveCat = null;
         let arZIndexCounter = 100;
         let arIsDragging = false, arIsPinching = false;
@@ -629,7 +642,6 @@
             if (e.target.classList.contains('ar-active-cat')) {
                 selectArCat(e.target);
             }
-            
             if (!arActiveCat) return; 
 
             if (e.touches.length === 1) {
@@ -800,7 +812,7 @@
         document.getElementById('download-ar-result-btn').addEventListener('click', () => { const dataUrl = document.getElementById('ar-result-img').src; const link = document.createElement('a'); link.download = `tobishima_${Date.now()}.png`; link.href = dataUrl; link.click(); });
 
         // ==========================================
-        // ミニゲーム（柑橘・神経衰弱）の処理
+        // ミニゲーム（柑橘・神経衰弱）
         // ==========================================
         const MG_CITRUS_DATA = [
             { id: "unnsyuu", name: "温州蜜柑", img: "./unnsyuu.png", desc: "日本の冬の定番！皮が薄くて手で剥きやすいのが特徴だニャ。" },
