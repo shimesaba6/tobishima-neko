@@ -80,12 +80,47 @@ const CAT_DATA = {
         description: "食べ過ぎて腹痛になった観光猫。島はドラッグストアも少ないから敏感な猫（人）は薬携帯推奨。",
         spawn_time: "all"
     },
+    "mikan": {
+        id: "mikan",
+        name: "みかん猫",
+        image: "./mikan.png",
+        description: "みかんを食べ過ぎた猫。冬場はこたつの上から動かない。",
+        spawn_time: "all"
+    },
+    "hasi": {
+        id: "hasi",
+        name: "橋猫",
+        image: "./hasi.png",
+        description: "橋のように大きくて長い猫。本人いわく通行料は猫缶１個とのこと。",
+        spawn_time: "all"
+    },
+    "tourou": {
+        id: "tourou",
+        name: "灯篭猫",
+        image: "./tourou.png",
+        description: "うっかり中に入ってしまった猫。暖かいので居候している。",
+        spawn_time: "night"
+    },
+    "ja": {
+        id: "ja",
+        name: "ＪＡコープ久比猫",
+        image: "./ja.png",
+        description: "ＪＡコープ久比店で働いている猫。働き者だがつまみ食いしていまうことも。",
+        spawn_time: "all"
+    },
     "drink": {
         id: "drink",
         name: "自販機猫",
         image: "./drink.png",
         description: "観光に来た不慣れな猫。島の店は早めに閉まってしまうので、夜は自販機しかないのだ。",
         spawn_time: "night"
+    },
+    "tokei": {
+        id: "tokei",
+        name: "時計猫",
+        image: "./tokei.png",
+        description: "御手洗地区で時計とメガネを扱っている職人猫。",
+        spawn_time: "all"
     },
     "tibita": {
         id: "tibita",
