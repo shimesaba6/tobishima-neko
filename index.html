@@ -113,10 +113,9 @@
             </div>
 
             <div class="flex flex-col gap-2">
-                <!-- 【追加】SA（島ねこ協同組合）ショップボタン -->
-                <button id="open-shop-btn" class="w-12 h-12 interactive transition-transform active:scale-95 drop-shadow-lg rounded-2xl overflow-hidden bg-emerald-600 border-2 border-white flex flex-col items-center justify-center text-white leading-none">
-                    <span class="text-[10px] font-black">島ねこ</span>
-                    <span class="text-base font-black">SA</span>
+                <!-- 【変更】SAショップボタンをアイコン（shimanekokan.png）に差し替え -->
+                <button id="open-shop-btn" class="w-12 h-12 interactive transition-transform active:scale-95 drop-shadow-lg rounded-2xl overflow-hidden bg-white/50">
+                    <img src="./shimanekokan.png" class="w-full h-full object-cover">
                 </button>
                 <button id="open-qr-btn" class="w-12 h-12 interactive transition-transform active:scale-95 drop-shadow-lg rounded-2xl overflow-hidden bg-white/50">
                     <img src="./yomitori.png" class="w-full h-full object-cover">
@@ -163,13 +162,10 @@
         </div>
     </div>
 
-    <!-- ================================================== -->
-    <!-- 【新規】SA（島ねこ協同組合）ショップモーダル -->
-    <!-- ================================================== -->
+    <!-- SA（島ねこ協同組合）ショップモーダル -->
     <div id="shop-modal" class="fixed inset-0 bg-black/60 z-[3000] hidden items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-[#f2f8f2] rounded-3xl p-5 w-full max-w-sm shadow-2xl relative interactive border-4 border-emerald-600 flex flex-col max-h-[92dvh] overflow-hidden">
             
-            <!-- 上部：ヘッダー -->
             <div class="flex justify-between items-center mb-3 border-b-2 border-emerald-200 pb-2">
                 <div class="flex items-center gap-2">
                     <span class="bg-emerald-700 text-white font-black text-xs px-2 py-1 rounded">SA</span>
@@ -184,9 +180,7 @@
                 </div>
             </div>
 
-            <!-- 中央部：商品リスト -->
             <div class="flex-1 overflow-y-auto pr-1 flex flex-col gap-2 mb-2" id="shop-item-list">
-                
                 <div class="bg-white rounded-2xl p-3 border border-emerald-100 shadow-sm flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center text-2xl shrink-0">🐟</div>
@@ -223,10 +217,8 @@
                     </div>
                     <span class="text-xs font-bold text-gray-400 px-2 py-1 bg-gray-100 rounded-lg">未入荷</span>
                 </div>
-
             </div>
 
-            <!-- 最下部：ショップ猫 ＆ 吹き出し -->
             <div class="bg-emerald-50 rounded-2xl p-2 border border-emerald-200 flex items-center gap-3 shrink-0 cursor-pointer active:scale-98 transition-transform" id="shop-cat-box">
                 <img src="./shop.png" class="w-20 h-20 object-contain shrink-0 drop-shadow">
                 <div class="relative bg-white px-3 py-2 rounded-xl border border-emerald-300 shadow-sm flex-1">
@@ -375,7 +367,6 @@
         let activeOtomoId = localStorage.getItem('tobishima_otomo') || null;
         let otomoMarker = null;
 
-        // 【追加】ねこメダルとオートエサの保存
         let medalCount = parseInt(localStorage.getItem('tobishima_medals')) || 0;
         let autoFoodCount = parseInt(localStorage.getItem('tobishima_autofood')) || 0;
 
@@ -513,7 +504,6 @@
             toyPos = null; 
         });
 
-        // 図鑑表示処理
         document.getElementById('open-zukan').addEventListener('click', () => { 
             const zl = document.getElementById('zukan-list'); 
             zl.innerHTML = ''; 
@@ -677,7 +667,6 @@
             catCurrentLatLng = L.latLng(playerLatLng.lat + (Math.random()*0.001 - 0.0005), playerLatLng.lng + (Math.random()*0.001 - 0.0005));
             activeCatMarker = L.marker(catCurrentLatLng, { icon: catIcon }).addTo(map);
             
-            // 【変更】エサやり時のダブり判定 ＆ メダルドロップ
             activeCatMarker.on('click', () => {
                 if(foodCount > 0) {
                     if (catDespawnTimer) clearTimeout(catDespawnTimer); 
@@ -688,11 +677,9 @@
                     const isAlreadyDiscovered = zukanData.includes(selectedCat.id);
 
                     if (!isAlreadyDiscovered) {
-                        // 新規猫の場合
                         addToZukan(selectedCat.id);
                         activeCatMarker.bindPopup(`<b style="font-size: 16px;">「ありがとうニャ！」<br><span style="color: #ea580c; font-size: 12px; margin-top: 4px;">お庭に遊びにくるニャ！</span></b>`, { className: 'custom-popup' }).openPopup();
                     } else {
-                        // 既出（ダブり）猫の場合：メダルを1枚ドロップ！
                         medalCount += 1;
                         updateMedalUI();
                         activeCatMarker.bindPopup(`<b style="font-size: 15px;">「いつもありがとうニャ！」<br><span style="color: #d97706; font-size: 13px; margin-top: 4px; display: block;">🪙 ねこメダルを 1枚 もらった！</span></b>`, { className: 'custom-popup' }).openPopup();
