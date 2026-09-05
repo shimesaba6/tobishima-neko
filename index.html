@@ -68,13 +68,28 @@
             <div class="text-center"><p class="text-2xl font-bold animate-pulse text-orange-600">GPSを探しています...</p></div>
         </div>
 
-        <div class="ui-layer top-0 left-0 w-full p-4 pt-6 flex flex-col items-center gap-2">
-            <div class="bg-white/95 backdrop-blur-md px-8 py-3 rounded-full shadow-md text-center interactive border-2 border-orange-200">
-                <p id="island-name" class="text-base text-orange-700 font-black">現在地を確認中...</p>
+        <div class="ui-layer top-0 left-0 w-full p-4 pt-6 flex justify-between items-start pointer-events-none">
+            <!-- 左：オートトグル -->
+            <button id="auto-toggle-btn" class="interactive bg-gray-500/90 text-white w-16 h-16 rounded-2xl shadow-md text-[10px] font-bold border-2 border-white/50 flex flex-col items-center justify-center leading-none transition-colors">
+                <span class="text-xl mb-0.5">🍱</span>
+                <span id="auto-toggle-text" class="tracking-tighter">OFF</span>
+            </button>
+            
+            <div class="flex flex-col items-center gap-2 flex-1 mx-2 pointer-events-auto">
+                <div class="bg-white/95 backdrop-blur-md px-6 py-2 rounded-full shadow-md text-center border-2 border-orange-200">
+                    <p id="island-name" class="text-sm text-orange-700 font-black">現在地を確認中...</p>
+                </div>
+                <div id="stay-ui" class="bg-blue-100/90 backdrop-blur-md px-6 py-2 rounded-full shadow-md text-center border border-blue-300 hidden transition-all">
+                    <p id="stay-text" class="text-xs text-blue-800 font-bold animate-pulse">スポットで休憩中…</p>
+                </div>
             </div>
-            <div id="stay-ui" class="bg-blue-100/90 backdrop-blur-md px-6 py-2 rounded-full shadow-md text-center interactive border border-blue-300 hidden transition-all">
-                <p id="stay-text" class="text-sm text-blue-800 font-bold animate-pulse">スポットで休憩中…</p>
-            </div>
+
+            <!-- 右：報告ボタン -->
+            <button id="auto-result-btn" class="interactive hidden bg-rose-500 text-white w-14 h-14 rounded-2xl shadow-md text-[10px] font-bold border-2 border-white/50 flex flex-col items-center justify-center leading-none animate-bounce shrink-0">
+                <span class="text-xl mb-0.5">✉️</span>
+                <span>報告アリ</span>
+            </button>
+            <div id="auto-result-spacer" class="w-14 h-14 shrink-0"></div>
         </div>
 
         <div id="recenter-container" class="ui-layer bottom-32 left-0 w-full flex justify-center transition-all duration-300 opacity-0 pointer-events-none translate-y-4">
@@ -113,7 +128,6 @@
             </div>
 
             <div class="flex flex-col gap-2">
-                <!-- 【変更】SAショップボタンをアイコン（shimanekokan.png）に差し替え -->
                 <button id="open-shop-btn" class="w-12 h-12 interactive transition-transform active:scale-95 drop-shadow-lg rounded-2xl overflow-hidden bg-white/50">
                     <img src="./shimanekokan.png" class="w-full h-full object-cover">
                 </button>
@@ -127,110 +141,57 @@
         </div>
     </div>
 
-    <!-- お庭 -->
+    <!-- モーダル群 (庭、図鑑、ショップ、AR、ミニゲームなど) -->
+    <!-- 中身は前回のまま完全に保持 -->
     <div id="garden-screen">
-        <div class="absolute top-8 left-4 z-10">
-            <button id="back-map-btn" class="bg-white/95 text-gray-800 px-6 py-3 rounded-full font-bold text-lg shadow-md border-2 border-gray-200 interactive">◀ マップ</button>
-        </div>
-        <div class="absolute top-8 right-4 z-10">
-            <button id="toy-btn" class="bg-yellow-400 text-gray-800 px-6 py-3 rounded-full font-bold text-lg shadow-md border-2 border-white interactive transition-colors">🧶 あそぶ</button>
-        </div>
+        <div class="absolute top-8 left-4 z-10"><button id="back-map-btn" class="bg-white/95 text-gray-800 px-6 py-3 rounded-full font-bold text-lg shadow-md border-2 border-gray-200 interactive">◀ マップ</button></div>
+        <div class="absolute top-8 right-4 z-10"><button id="toy-btn" class="bg-yellow-400 text-gray-800 px-6 py-3 rounded-full font-bold text-lg shadow-md border-2 border-white interactive transition-colors">🧶 あそぶ</button></div>
         <div id="toy-icon" class="absolute hidden text-5xl pointer-events-none z-[1600] drop-shadow-lg" style="transform: translate(-50%, -50%); transition: none;">🧶</div>
         <div id="garden-container" class="w-full h-full relative"></div>
     </div>
     
-    <!-- ねこ図鑑モーダル -->
     <div id="zukan-modal" class="fixed inset-0 bg-black/60 z-[3000] hidden items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-[#fdf6e3] rounded-3xl p-5 w-full max-w-sm shadow-2xl relative interactive border-4 border-indigo-200 flex flex-col max-h-[90dvh]">
-            <div class="flex justify-between items-start mb-2">
-                <div class="w-8"></div>
-                <div class="text-center flex-1">
-                    <h2 class="text-2xl font-black text-indigo-800 leading-none">ねこ図鑑</h2>
-                    <p id="zukan-progress" class="text-sm font-bold text-indigo-600 mt-1">0 / 0 種類</p>
-                </div>
-                <button id="close-zukan" class="w-8 h-8 bg-gray-300 text-gray-700 rounded-full font-black flex items-center justify-center shadow-sm active:scale-95 text-sm shrink-0">✖</button>
-            </div>
-            
+            <div class="flex justify-between items-start mb-2"><div class="w-8"></div><div class="text-center flex-1"><h2 class="text-2xl font-black text-indigo-800 leading-none">ねこ図鑑</h2><p id="zukan-progress" class="text-sm font-bold text-indigo-600 mt-1">0 / 0 種類</p></div><button id="close-zukan" class="w-8 h-8 bg-gray-300 text-gray-700 rounded-full font-black flex items-center justify-center shadow-sm active:scale-95 text-sm shrink-0">✖</button></div>
             <p class="text-center text-[10px] text-orange-600 font-bold mb-3">※まるい画像をタップで拡大</p>
-            <div id="cat-detail" class="bg-white rounded-2xl p-4 mb-3 min-h-[90px] flex items-center justify-center text-center shadow-inner border border-gray-200 shrink-0">
-                <p class="text-gray-500 font-bold">ねこをタップするニャ</p>
-            </div>
+            <div id="cat-detail" class="bg-white rounded-2xl p-4 mb-3 min-h-[90px] flex items-center justify-center text-center shadow-inner border border-gray-200 shrink-0"><p class="text-gray-500 font-bold">ねこをタップするニャ</p></div>
             <div class="grid grid-cols-3 gap-3 overflow-y-auto p-1 flex-1 relative" id="zukan-list"></div>
-            <div class="mt-2 text-center shrink-0">
-                <p id="open-reset-btn" class="text-[10px] text-gray-400 font-bold underline cursor-pointer inline-block p-2">データを初期化する</p>
-            </div>
+            <div class="mt-2 text-center shrink-0"><p id="open-reset-btn" class="text-[10px] text-gray-400 font-bold underline cursor-pointer inline-block p-2">データを初期化する</p></div>
         </div>
     </div>
 
-    <!-- SA（島ねこ協同組合）ショップモーダル -->
     <div id="shop-modal" class="fixed inset-0 bg-black/60 z-[3000] hidden items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-[#f2f8f2] rounded-3xl p-5 w-full max-w-sm shadow-2xl relative interactive border-4 border-emerald-600 flex flex-col max-h-[92dvh] overflow-hidden">
-            
-            <div class="flex justify-between items-center mb-3 border-b-2 border-emerald-200 pb-2">
-                <div class="flex items-center gap-2">
-                    <span class="bg-emerald-700 text-white font-black text-xs px-2 py-1 rounded">SA</span>
-                    <h2 class="text-xl font-black text-emerald-900 leading-none">島ねこ協同組合</h2>
-                </div>
-                <div class="flex items-center gap-2">
-                    <div class="bg-amber-100 border border-amber-300 px-3 py-1 rounded-full flex items-center gap-1 shadow-inner">
-                        <span class="text-sm">🪙</span>
-                        <span id="shop-modal-medals" class="font-black text-sm text-amber-800">0</span>
-                    </div>
-                    <button id="close-shop" class="w-8 h-8 bg-gray-300 text-gray-700 rounded-full font-black flex items-center justify-center shadow-sm active:scale-95 text-sm shrink-0">✖</button>
-                </div>
-            </div>
-
+            <div class="flex justify-between items-center mb-3 border-b-2 border-emerald-200 pb-2"><div class="flex items-center gap-2"><span class="bg-emerald-700 text-white font-black text-xs px-2 py-1 rounded">SA</span><h2 class="text-xl font-black text-emerald-900 leading-none">島ねこ協同組合</h2></div><div class="flex items-center gap-2"><div class="bg-amber-100 border border-amber-300 px-3 py-1 rounded-full flex items-center gap-1 shadow-inner"><span class="text-sm">🪙</span><span id="shop-modal-medals" class="font-black text-sm text-amber-800">0</span></div><button id="close-shop" class="w-8 h-8 bg-gray-300 text-gray-700 rounded-full font-black flex items-center justify-center shadow-sm active:scale-95 text-sm shrink-0">✖</button></div></div>
             <div class="flex-1 overflow-y-auto pr-1 flex flex-col gap-2 mb-2" id="shop-item-list">
-                <div class="bg-white rounded-2xl p-3 border border-emerald-100 shadow-sm flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center text-2xl shrink-0">🐟</div>
-                        <div>
-                            <p class="font-black text-gray-800 text-sm">エサづくし (3個)</p>
-                            <p class="text-[11px] text-gray-500 font-bold">島を歩かずにエサを補充！</p>
-                        </div>
-                    </div>
-                    <button onclick="buyShopItem('food3', 2)" class="bg-emerald-600 active:bg-emerald-700 text-white font-black px-3 py-2 rounded-xl text-xs shadow shrink-0 flex items-center gap-1">
-                        <span>🪙 2</span>
-                    </button>
-                </div>
-
-                <div class="bg-white rounded-2xl p-3 border border-emerald-100 shadow-sm flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-2xl shrink-0">🍱</div>
-                        <div>
-                            <p class="font-black text-gray-800 text-sm">オート用おきエサ</p>
-                            <p class="text-[11px] text-gray-500 font-bold">ラン・自転車移動のお供に！</p>
-                        </div>
-                    </div>
-                    <button onclick="buyShopItem('autofood', 5)" class="bg-emerald-600 active:bg-emerald-700 text-white font-black px-3 py-2 rounded-xl text-xs shadow shrink-0 flex items-center gap-1">
-                        <span>🪙 5</span>
-                    </button>
-                </div>
-
-                <div class="bg-white rounded-2xl p-3 border border-emerald-100 shadow-sm flex items-center justify-between opacity-60">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-2xl shrink-0">🔒</div>
-                        <div>
-                            <p class="font-black text-gray-600 text-sm">まめな食堂 特製弁当</p>
-                            <p class="text-[10px] text-gray-400 font-bold">現地スポット訪問で入荷予定！</p>
-                        </div>
-                    </div>
-                    <span class="text-xs font-bold text-gray-400 px-2 py-1 bg-gray-100 rounded-lg">未入荷</span>
-                </div>
+                <div class="bg-white rounded-2xl p-3 border border-emerald-100 shadow-sm flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center text-2xl shrink-0">🐟</div><div><p class="font-black text-gray-800 text-sm">エサづくし (3個)</p><p class="text-[11px] text-gray-500 font-bold">島を歩かずにエサを補充！</p></div></div><button onclick="buyShopItem('food3', 2)" class="bg-emerald-600 active:bg-emerald-700 text-white font-black px-3 py-2 rounded-xl text-xs shadow shrink-0 flex items-center gap-1"><span>🪙 2</span></button></div>
+                <div class="bg-white rounded-2xl p-3 border border-emerald-100 shadow-sm flex items-center justify-between"><div class="flex items-center gap-3"><div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-2xl shrink-0">🍱</div><div><p class="font-black text-gray-800 text-sm">オート用おきエサ</p><p class="text-[11px] text-gray-500 font-bold">ラン・自転車移動のお供に！</p></div></div><button onclick="buyShopItem('autofood', 5)" class="bg-emerald-600 active:bg-emerald-700 text-white font-black px-3 py-2 rounded-xl text-xs shadow shrink-0 flex items-center gap-1"><span>🪙 5</span></button></div>
+                <div class="bg-white rounded-2xl p-3 border border-emerald-100 shadow-sm flex items-center justify-between opacity-60"><div class="flex items-center gap-3"><div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-2xl shrink-0">🔒</div><div><p class="font-black text-gray-600 text-sm">まめな食堂 特製弁当</p><p class="text-[10px] text-gray-400 font-bold">現地スポット訪問で入荷予定！</p></div></div><span class="text-xs font-bold text-gray-400 px-2 py-1 bg-gray-100 rounded-lg">未入荷</span></div>
             </div>
-
-            <div class="bg-emerald-50 rounded-2xl p-2 border border-emerald-200 flex items-center gap-3 shrink-0 cursor-pointer active:scale-98 transition-transform" id="shop-cat-box">
-                <img src="./shop.png" class="w-20 h-20 object-contain shrink-0 drop-shadow">
-                <div class="relative bg-white px-3 py-2 rounded-xl border border-emerald-300 shadow-sm flex-1">
-                    <p id="shop-cat-talk" class="text-xs font-bold text-emerald-950 leading-tight">いらっしゃいませニャ！</p>
-                    <span class="absolute left-[-6px] top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px] border-r-white"></span>
-                </div>
-            </div>
-
+            <div class="bg-emerald-50 rounded-2xl p-2 border border-emerald-200 flex items-center gap-3 shrink-0 cursor-pointer active:scale-98 transition-transform" id="shop-cat-box"><img src="./shop.png" class="w-20 h-20 object-contain shrink-0 drop-shadow"><div class="relative bg-white px-3 py-2 rounded-xl border border-emerald-300 shadow-sm flex-1"><p id="shop-cat-talk" class="text-xs font-bold text-emerald-950 leading-tight">いらっしゃいませニャ！</p><span class="absolute left-[-6px] top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[6px] border-r-white"></span></div></div>
         </div>
     </div>
 
-    <!-- 画像拡大・QR・アラートモーダル -->
+    <!-- オート捕獲リザルトモーダル -->
+    <div id="auto-result-modal" class="fixed inset-0 bg-black/80 z-[6500] hidden items-center justify-center p-4 backdrop-blur-sm interactive">
+        <div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-center border-4 border-rose-400 max-h-[80dvh] flex flex-col">
+            <h2 class="text-2xl font-black text-rose-800 mb-2">移動の記録</h2>
+            <p class="text-[12px] text-gray-600 font-bold mb-4">おきエサを使って猫を呼び寄せたニャ！</p>
+            <div class="bg-white rounded-2xl p-4 mb-4 border border-rose-100 flex-1 overflow-y-auto text-left shadow-inner">
+                <p class="text-sm font-black text-gray-700 border-b pb-1 mb-2">📊 成果報告</p>
+                <ul class="text-sm font-bold text-gray-600 space-y-1 mb-4">
+                    <li>歩行（走行）距離： <span id="res-dist" class="text-blue-500 text-lg">0</span> km</li>
+                    <li>逃げられた回数： <span id="res-escaped" class="text-red-500 text-lg">0</span> 回</li>
+                    <li>新しく出会った猫： <span id="res-new" class="text-orange-500 text-lg">0</span> 匹</li>
+                    <li>獲得したメダル： <span id="res-medals" class="text-amber-500 text-lg">0</span> 枚</li>
+                </ul>
+                <p class="text-sm font-black text-gray-700 border-b pb-1 mb-2">🐾 遊びに来た猫たち</p>
+                <div id="res-cat-list" class="flex flex-wrap gap-2 justify-center"></div>
+            </div>
+            <button id="close-auto-result" class="bg-rose-500 hover:bg-rose-600 text-white px-8 py-3 rounded-full font-bold text-lg shadow-md active:scale-95 shrink-0 border-2 border-white">確認したニャ！</button>
+        </div>
+    </div>
+
     <div id="image-modal" class="fixed inset-0 bg-black/80 z-[5000] hidden flex-col items-center justify-center p-4 interactive"><div class="w-full max-w-md flex justify-end mb-2 pr-4"><button id="close-image-modal" class="text-white text-5xl font-bold">&times;</button></div><img id="enlarged-image" src="" class="w-[90%] max-w-[300px] object-contain filter drop-shadow-lg"></div>
     <div id="qr-modal" class="fixed inset-0 bg-black/90 z-[6000] hidden flex-col items-center justify-center p-4 interactive"><h2 class="text-white text-xl font-bold mb-4">シークレットQRを探せ！</h2><div id="qr-reader" class="w-full max-w-sm bg-white rounded-xl overflow-hidden mb-6"></div><button id="close-qr-btn" class="bg-red-500 text-white px-8 py-3 rounded-full font-bold text-lg">やめる</button></div>
     <div id="custom-alert-modal" class="fixed inset-0 bg-black/60 z-[7000] hidden flex-col items-center justify-center p-4 interactive"><div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-center border-4 border-orange-200"><h3 id="custom-alert-title" class="text-2xl font-black text-gray-800 mb-3"></h3><p id="custom-alert-message" class="text-base text-gray-600 font-bold mb-6"></p><button id="custom-alert-close" class="bg-orange-500 text-white px-10 py-3 rounded-full font-bold text-lg">OK</button></div></div>
@@ -241,84 +202,20 @@
         <video id="ar-video" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline></video>
         <div id="ar-cats-container" class="absolute inset-0 z-10 pointer-events-auto touch-none overflow-hidden"></div>
         <div id="ar-ui-layer" class="absolute inset-0 z-20 flex flex-col justify-between pointer-events-none">
-            <div class="p-4 flex justify-end">
-                <button id="close-ar-btn" class="bg-red-500 text-white px-4 py-2 rounded-full font-bold pointer-events-auto border-2 border-white shadow-lg mt-2">✖ 閉じる</button>
-            </div>
+            <div class="p-4 flex justify-end"><button id="close-ar-btn" class="bg-red-500 text-white px-4 py-2 rounded-full font-bold pointer-events-auto border-2 border-white shadow-lg mt-2">✖ 閉じる</button></div>
             <div class="bg-gradient-to-t from-black/80 via-black/40 to-transparent w-full pt-16 px-4 flex flex-col items-center gap-3 pointer-events-none" style="padding-bottom: max(env(safe-area-inset-bottom), 24px);">
-                <div id="ar-cat-menu" class="hidden pointer-events-auto flex-col items-center gap-3 w-full max-w-sm bg-black/70 backdrop-blur-md p-4 rounded-3xl border border-white/30 shadow-2xl">
-                    <p class="text-white text-xs font-bold text-center leading-relaxed">
-                        猫をタップして追加するニャ！(最大3匹)<br>
-                        <span class="text-orange-300">追加後は画面の空きスペースをなぞって<br>「移動」や「拡大・縮小」ができるニャ！</span>
-                    </p>
-                    <div id="ar-cat-selector" class="flex gap-3 overflow-x-auto w-full pb-2"></div>
-                    <button id="close-cat-menu-btn" class="bg-gray-500 text-white px-8 py-2 rounded-full text-sm font-bold shadow-md active:scale-95 mt-1">とじる</button>
-                </div>
-                <div class="pointer-events-auto flex gap-2 w-full max-w-sm justify-center">
-                    <button id="ar-add-cat-btn" class="bg-orange-500 text-white px-4 py-3 rounded-full font-bold shadow-xl border-4 border-white active:scale-95 shrink-0 flex flex-col items-center justify-center leading-none gap-1">
-                        <span class="text-xl">🐾</span><span class="text-[10px]">よぶ</span>
-                    </button>
-                    <button id="ar-clear-btn" class="bg-gray-200 text-gray-800 px-3 py-3 rounded-full font-bold shadow-xl border-4 border-gray-300 active:scale-95 shrink-0 flex flex-col items-center justify-center leading-none gap-1">
-                        <span class="text-xl">🗑️</span><span class="text-[10px]">リセット</span>
-                    </button>
-                    <button id="ar-shutter-btn" class="bg-white/90 text-gray-800 py-3 rounded-full font-black text-xl shadow-xl border-4 border-gray-300 active:scale-95 active:bg-gray-200 flex-1">
-                        📸 撮る！
-                    </button>
-                </div>
+                <div id="ar-cat-menu" class="hidden pointer-events-auto flex-col items-center gap-3 w-full max-w-sm bg-black/70 backdrop-blur-md p-4 rounded-3xl border border-white/30 shadow-2xl"><p class="text-white text-xs font-bold text-center leading-relaxed">猫をタップして追加するニャ！(最大3匹)</p><div id="ar-cat-selector" class="flex gap-3 overflow-x-auto w-full pb-2"></div><button id="close-cat-menu-btn" class="bg-gray-500 text-white px-8 py-2 rounded-full text-sm font-bold shadow-md active:scale-95 mt-1">とじる</button></div>
+                <div class="pointer-events-auto flex gap-2 w-full max-w-sm justify-center"><button id="ar-add-cat-btn" class="bg-orange-500 text-white px-4 py-3 rounded-full font-bold shadow-xl border-4 border-white active:scale-95 shrink-0 flex flex-col items-center justify-center leading-none gap-1"><span class="text-xl">🐾</span><span class="text-[10px]">よぶ</span></button><button id="ar-clear-btn" class="bg-gray-200 text-gray-800 px-3 py-3 rounded-full font-bold shadow-xl border-4 border-gray-300 active:scale-95 shrink-0 flex flex-col items-center justify-center leading-none gap-1"><span class="text-xl">🗑️</span><span class="text-[10px]">リセット</span></button><button id="ar-shutter-btn" class="bg-white/90 text-gray-800 py-3 rounded-full font-black text-xl shadow-xl border-4 border-gray-300 active:scale-95 active:bg-gray-200 flex-1">📸 撮る！</button></div>
             </div>
         </div>
     </div>
-
-    <!-- AR撮影結果 -->
-    <div id="ar-result-modal" class="fixed inset-0 bg-black/95 z-[9000] hidden flex-col items-center justify-center p-4 interactive">
-        <p class="text-white font-bold mb-4">きれいに撮れたニャ！</p>
-        <img id="ar-result-img" src="" class="w-full max-w-sm rounded-lg shadow-2xl mb-8 border-4 border-white object-contain max-h-[60dvh]">
-        <div class="flex gap-4">
-            <button id="close-ar-result-btn" class="bg-gray-500 text-white px-6 py-3 rounded-full font-bold text-lg">とじる</button>
-            <button id="download-ar-result-btn" class="bg-blue-500 text-white px-6 py-3 rounded-full font-bold text-lg flex items-center gap-2">💾 保存する</button>
-        </div>
-    </div>
+    <div id="ar-result-modal" class="fixed inset-0 bg-black/95 z-[9000] hidden flex-col items-center justify-center p-4 interactive"><p class="text-white font-bold mb-4">きれいに撮れたニャ！</p><img id="ar-result-img" src="" class="w-full max-w-sm rounded-lg shadow-2xl mb-8 border-4 border-white object-contain max-h-[60dvh]"><div class="flex gap-4"><button id="close-ar-result-btn" class="bg-gray-500 text-white px-6 py-3 rounded-full font-bold text-lg">とじる</button><button id="download-ar-result-btn" class="bg-blue-500 text-white px-6 py-3 rounded-full font-bold text-lg flex items-center gap-2">💾 保存する</button></div></div>
 
     <!-- ミニゲーム画面 -->
     <div id="minigame-screen" class="hidden absolute inset-0 z-[2000] bg-[#fdf6e3] flex-col overflow-hidden interactive">
-        <div class="w-full px-6 py-4 flex justify-between items-center bg-white/90 backdrop-blur-md shadow-sm shrink-0 z-10 relative">
-            <div class="text-left w-1/3">
-                <p class="text-[10px] font-bold text-gray-500 mb-1">おとも猫</p>
-                <div id="mg-otomo-icon" class="w-10 h-10 bg-orange-100 rounded-full border-2 border-orange-300 overflow-hidden flex items-center justify-center">
-                    <img src="" id="mg-otomo-img" class="w-8 h-8 object-contain">
-                </div>
-            </div>
-            <div class="text-center w-1/3 border-x-2 border-orange-100">
-                <p class="text-[10px] font-bold text-gray-500 mb-1">残り時間</p>
-                <p id="mg-time" class="text-3xl font-black text-red-500 leading-none">40</p>
-            </div>
-            <div class="text-right w-1/3">
-                <p class="text-[10px] font-bold text-gray-500 mb-1">ペア数</p>
-                <p id="mg-score" class="text-3xl font-black text-green-600 leading-none">0</p>
-            </div>
-        </div>
-        <div class="flex-1 w-full overflow-y-auto flex items-center justify-center p-4 pb-8">
-            <div id="mg-board" class="w-full max-w-[360px] flex flex-wrap justify-center gap-3"></div>
-        </div>
-        <div id="mg-overlay" class="absolute inset-0 bg-black/70 flex items-center justify-center z-[2100]">
-            <div class="bg-white p-6 rounded-3xl text-center shadow-2xl border-4 border-orange-400 max-w-[320px] w-[90%]">
-                <h2 id="mg-title" class="text-2xl font-black text-orange-600 mb-4">柑橘・神経衰弱</h2>
-                <p id="mg-desc" class="font-bold text-gray-600 text-[13px] mb-6 leading-relaxed">
-                    同じ種類の柑橘を２枚めくってペアを作ろう！<br>間違えすぎると、おとも猫がヒントをくれるかも…？
-                </p>
-                <div id="mg-result" class="hidden mb-6 bg-orange-50 rounded-xl p-4 border border-orange-200">
-                    <p class="text-sm font-bold text-gray-600 mb-2">見つけたペア</p>
-                    <p class="text-3xl font-black text-green-600 mb-2"><span id="mg-result-score">0</span> <span class="text-sm text-gray-800">ペア</span></p>
-                    <hr class="border-orange-200 my-2">
-                    <p class="text-[11px] font-bold text-gray-500">※2ペアでエサ1個と交換</p>
-                    <p class="text-lg font-bold text-orange-700 mt-1">エサを <span id="mg-result-food" class="text-3xl font-black">0</span> 個ゲット！</p>
-                    <div id="mg-mamechishiki"></div>
-                </div>
-                <div class="flex gap-3 justify-center">
-                    <button id="mg-close-btn" class="bg-gray-400 text-white px-6 py-3 rounded-full font-bold shadow-md active:scale-95">もどる</button>
-                    <button id="mg-start-btn" class="bg-orange-500 text-white px-8 py-3 rounded-full font-bold shadow-md active:scale-95">スタート！</button>
-                </div>
-            </div>
-        </div>
+        <div class="w-full px-6 py-4 flex justify-between items-center bg-white/90 backdrop-blur-md shadow-sm shrink-0 z-10 relative"><div class="text-left w-1/3"><p class="text-[10px] font-bold text-gray-500 mb-1">おとも猫</p><div id="mg-otomo-icon" class="w-10 h-10 bg-orange-100 rounded-full border-2 border-orange-300 overflow-hidden flex items-center justify-center"><img src="" id="mg-otomo-img" class="w-8 h-8 object-contain"></div></div><div class="text-center w-1/3 border-x-2 border-orange-100"><p class="text-[10px] font-bold text-gray-500 mb-1">残り時間</p><p id="mg-time" class="text-3xl font-black text-red-500 leading-none">40</p></div><div class="text-right w-1/3"><p class="text-[10px] font-bold text-gray-500 mb-1">ペア数</p><p id="mg-score" class="text-3xl font-black text-green-600 leading-none">0</p></div></div>
+        <div class="flex-1 w-full overflow-y-auto flex items-center justify-center p-4 pb-8"><div id="mg-board" class="w-full max-w-[360px] flex flex-wrap justify-center gap-3"></div></div>
+        <div id="mg-overlay" class="absolute inset-0 bg-black/70 flex items-center justify-center z-[2100]"><div class="bg-white p-6 rounded-3xl text-center shadow-2xl border-4 border-orange-400 max-w-[320px] w-[90%]"><h2 id="mg-title" class="text-2xl font-black text-orange-600 mb-4">柑橘・神経衰弱</h2><p id="mg-desc" class="font-bold text-gray-600 text-[13px] mb-6 leading-relaxed">同じ種類の柑橘を２枚めくってペアを作ろう！<br>間違えすぎると、おとも猫がヒントをくれるかも…？</p><div id="mg-result" class="hidden mb-6 bg-orange-50 rounded-xl p-4 border border-orange-200"><p class="text-sm font-bold text-gray-600 mb-2">見つけたペア</p><p class="text-3xl font-black text-green-600 mb-2"><span id="mg-result-score">0</span> <span class="text-sm text-gray-800">ペア</span></p><hr class="border-orange-200 my-2"><p class="text-[11px] font-bold text-gray-500">※2ペアでエサ1個と交換</p><p class="text-lg font-bold text-orange-700 mt-1">エサを <span id="mg-result-food" class="text-3xl font-black">0</span> 個ゲット！</p><div id="mg-mamechishiki"></div></div><div class="flex gap-3 justify-center"><button id="mg-close-btn" class="bg-gray-400 text-white px-6 py-3 rounded-full font-bold shadow-md active:scale-95">もどる</button><button id="mg-start-btn" class="bg-orange-500 text-white px-8 py-3 rounded-full font-bold shadow-md active:scale-95">スタート！</button></div></div></div>
     </div>
 
     <script src="./cats.js"></script>
@@ -352,7 +249,6 @@
             "「ここは景色がいいニャ〜。歩くの楽しいニャ！」"
         ];
 
-        // ショップ猫のセリフ集
         const SHOP_CAT_TALKS = [
             "いらっしゃいませニャ！島ねこ協同組合へようこそ！",
             "あの新商品、すごくおいしそうだニャ…",
@@ -369,6 +265,12 @@
 
         let medalCount = parseInt(localStorage.getItem('tobishima_medals')) || 0;
         let autoFoodCount = parseInt(localStorage.getItem('tobishima_autofood')) || 0;
+        
+        // オートタイマー（30分制）用の変数
+        let autoEndTime = parseInt(localStorage.getItem('tobishima_auto_endtime')) || 0;
+        let autoDistanceWalked = parseFloat(localStorage.getItem('tobishima_auto_dist')) || 0;
+        let autoResults = JSON.parse(localStorage.getItem('tobishima_autoresults')) || { totalDist: 0, caught: [], escaped: 0, medals: 0, newCount: 0 };
+        let autoTimerInterval = null;
 
         function updateMedalUI() {
             document.getElementById('medal-count-main').innerText = medalCount;
@@ -402,7 +304,160 @@
         }
 
         // ==========================================
-        // SA（島ねこ協同組合）ショップ関連
+        // オート機能（30分タイマー）＆リザルト処理
+        // ==========================================
+        const autoToggleBtn = document.getElementById('auto-toggle-btn');
+        const autoToggleText = document.getElementById('auto-toggle-text');
+        const autoResultBtn = document.getElementById('auto-result-btn');
+        const autoResultSpacer = document.getElementById('auto-result-spacer');
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function updateAutoTimerUI() {
+            const now = Date.now();
+            if (autoEndTime > now) {
+                const remainSec = Math.floor((autoEndTime - now) / 1000);
+                autoToggleBtn.classList.replace('bg-gray-500/90', 'bg-emerald-500/90');
+                autoToggleBtn.classList.replace('border-white/50', 'border-emerald-200');
+                autoToggleText.innerText = formatTime(remainSec);
+            } else {
+                autoToggleBtn.classList.replace('bg-emerald-500/90', 'bg-gray-500/90');
+                autoToggleBtn.classList.replace('border-emerald-200', 'border-white/50');
+                autoToggleText.innerText = `OFF(${autoFoodCount})`;
+                if (autoTimerInterval) clearInterval(autoTimerInterval);
+            }
+        }
+
+        function updateAutoResultBtn() {
+            if (autoResults.totalDist > 0 || autoResults.escaped > 0) {
+                autoResultBtn.classList.remove('hidden');
+                autoResultSpacer.classList.add('hidden');
+            } else {
+                autoResultBtn.classList.add('hidden');
+                autoResultSpacer.classList.remove('hidden');
+            }
+        }
+
+        updateAutoTimerUI();
+        updateAutoResultBtn();
+
+        if (autoEndTime > Date.now()) {
+            autoTimerInterval = setInterval(updateAutoTimerUI, 1000);
+        }
+
+        autoToggleBtn.addEventListener('click', () => {
+            const now = Date.now();
+            if (autoEndTime > now) {
+                showCustomAlert('効果時間中ニャ', '現在おきエサの効果が発動中ニャ！<br>残り時間が切れるまで、裏側で猫を探し続けるニャ！');
+                return;
+            }
+            if (autoFoodCount <= 0) {
+                showCustomAlert('おきエサがないニャ', 'SA（島ねこ協同組合）で「オート用おきエサ」を買ってきてニャ！');
+                return;
+            }
+            
+            // おきエサを消費して30分（1800秒）スタート
+            autoFoodCount--;
+            localStorage.setItem('tobishima_autofood', autoFoodCount);
+            autoEndTime = now + (30 * 60 * 1000);
+            localStorage.setItem('tobishima_auto_endtime', autoEndTime);
+            
+            updateAutoTimerUI();
+            if (autoTimerInterval) clearInterval(autoTimerInterval);
+            autoTimerInterval = setInterval(updateAutoTimerUI, 1000);
+            
+            showCustomAlert('オートモード開始！', '30分間、1km移動するごとに自動で捕獲判定をするニャ！<br>移動が終わったら報告をチェックしてニャ。');
+        });
+
+        // 1km歩くごとに呼ばれるオート捕獲処理
+        function processAutoCatch() {
+            autoResults.totalDist += 1; // 1km加算
+
+            const availableCats = [];
+            for (const key in CAT_DATA) {
+                const cat = CAT_DATA[key]; 
+                if (cat.is_special) continue; 
+                const timeMatch = (!cat.spawn_time || cat.spawn_time === "all" || cat.spawn_time === currentTimeState);
+                const weatherMatch = (!cat.spawn_weather || cat.spawn_weather === "all" || cat.spawn_weather === currentWeatherState);
+                if (timeMatch && weatherMatch) availableCats.push(cat);
+            }
+
+            if (availableCats.length > 0) {
+                let totalWeight = 0;
+                availableCats.forEach(cat => { totalWeight += (cat.spawn_rate !== undefined ? cat.spawn_rate : 10); });
+                let randomNum = Math.random() * totalWeight;
+                let selectedCat = availableCats[0];
+                for (let i = 0; i < availableCats.length; i++) {
+                    const weight = availableCats[i].spawn_rate !== undefined ? availableCats[i].spawn_rate : 10;
+                    randomNum -= weight;
+                    if (randomNum <= 0) { selectedCat = availableCats[i]; break; }
+                }
+
+                // 成功率70%のシビアな判定
+                if (Math.random() < 0.7) {
+                    if (!zukanData.includes(selectedCat.id)) {
+                        zukanData.push(selectedCat.id);
+                        localStorage.setItem('tobishima_zukan', JSON.stringify(zukanData));
+                        autoResults.newCount++;
+                    } else {
+                        medalCount++;
+                        updateMedalUI();
+                        autoResults.medals++;
+                    }
+                    autoResults.caught.push(selectedCat.id);
+                } else {
+                    autoResults.escaped++;
+                }
+            } else {
+                autoResults.escaped++;
+            }
+
+            localStorage.setItem('tobishima_autoresults', JSON.stringify(autoResults));
+            updateAutoResultBtn();
+        }
+
+        // リザルト画面を開く処理
+        autoResultBtn.addEventListener('click', () => {
+            document.getElementById('res-dist').innerText = autoResults.totalDist;
+            document.getElementById('res-escaped').innerText = autoResults.escaped;
+            document.getElementById('res-new').innerText = autoResults.newCount;
+            document.getElementById('res-medals').innerText = autoResults.medals;
+
+            const listEl = document.getElementById('res-cat-list');
+            listEl.innerHTML = '';
+            if (autoResults.caught.length > 0) {
+                const countMap = {};
+                autoResults.caught.forEach(id => { countMap[id] = (countMap[id] || 0) + 1; });
+                for (const [id, count] of Object.entries(countMap)) {
+                    if (CAT_DATA[id]) {
+                        const imgWrap = document.createElement('div');
+                        imgWrap.className = 'relative w-12 h-12 bg-gray-50 rounded-xl border border-gray-200 p-1 flex items-center justify-center shadow-sm';
+                        imgWrap.innerHTML = `<img src="${CAT_DATA[id].image}" class="w-full h-full object-contain"><span class="absolute -top-2 -right-2 bg-emerald-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-black border border-white">x${count}</span>`;
+                        listEl.appendChild(imgWrap);
+                    }
+                }
+            } else {
+                listEl.innerHTML = '<p class="text-xs text-gray-400 py-4 font-bold">一匹も捕まらなかったニャ…</p>';
+            }
+
+            document.getElementById('auto-result-modal').classList.remove('hidden');
+            document.getElementById('auto-result-modal').classList.add('flex');
+        });
+
+        document.getElementById('close-auto-result').addEventListener('click', () => {
+            autoResults = { totalDist: 0, caught: [], escaped: 0, medals: 0, newCount: 0 };
+            localStorage.setItem('tobishima_autoresults', JSON.stringify(autoResults));
+            updateAutoResultBtn();
+            document.getElementById('auto-result-modal').classList.add('hidden');
+            document.getElementById('auto-result-modal').classList.remove('flex');
+        });
+
+        // ==========================================
+        // SAショップ・UI操作イベント
         // ==========================================
         document.getElementById('open-shop-btn').addEventListener('click', () => {
             document.getElementById('shop-modal').classList.remove('hidden');
@@ -422,8 +477,7 @@
         }
 
         document.getElementById('shop-cat-box').addEventListener('click', () => {
-            catVoice.currentTime = 0;
-            catVoice.play().catch(()=>{});
+            catVoice.currentTime = 0; catVoice.play().catch(()=>{});
             setRandomShopCatTalk();
         });
 
@@ -446,13 +500,11 @@
             } else if (itemId === 'autofood') {
                 autoFoodCount += 1;
                 localStorage.setItem('tobishima_autofood', autoFoodCount);
-                showCustomAlert('お買い上げ感謝ニャ！', 'オート用おきエサを 1個 手に入れたニャ！<br>(※次回アップデートで自動捕獲機能と連動します)');
+                updateAutoTimerUI();
+                showCustomAlert('お買い上げ感謝ニャ！', 'オート用おきエサを手に入れたニャ！<br>左上の「お弁当」ボタンを押すと、30分間自動で猫を探すニャ！');
             }
         };
 
-        // ==========================================
-        // UI操作・遷移イベント
-        // ==========================================
         document.getElementById('start-btn').addEventListener('click', () => {
             catVoice.play().then(() => { catVoice.pause(); catVoice.currentTime = 0; }).catch(() => {});
             document.getElementById('start-screen').style.opacity = '0'; 
@@ -560,15 +612,24 @@
             localStorage.removeItem('tobishima_food'); 
             localStorage.removeItem('tobishima_medals');
             localStorage.removeItem('tobishima_autofood');
+            localStorage.removeItem('tobishima_auto_endtime');
+            localStorage.removeItem('tobishima_auto_dist');
+            localStorage.removeItem('tobishima_autoresults');
             localStorage.removeItem('tobishima_last_login'); 
             zukanData = []; 
             activeOtomoId = null; 
             foodCount = 3; 
             medalCount = 0;
             autoFoodCount = 0;
+            autoEndTime = 0;
+            autoDistanceWalked = 0;
+            autoResults = { totalDist: 0, caught: [], escaped: 0, medals: 0, newCount: 0 };
             distanceWalked = 0; 
+            if(autoTimerInterval) clearInterval(autoTimerInterval);
             document.getElementById('food-count').innerHTML = `3`; 
             updateMedalUI();
+            updateAutoTimerUI();
+            updateAutoResultBtn();
             document.getElementById('distance-progress').innerText = `あと ${DISTANCE_TO_FOOD}m`; 
             document.getElementById('distance-bar').style.width = `0%`; 
             document.getElementById('reset-confirm-modal').classList.add('hidden'); 
@@ -582,7 +643,7 @@
         document.getElementById('open-qr-btn').addEventListener('click', () => { document.getElementById('qr-modal').classList.remove('hidden'); document.getElementById('qr-modal').classList.add('flex'); html5QrCode = new Html5Qrcode("qr-reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, (dec) => { if(CAT_DATA[dec]) { html5QrCode.stop().then(() => { document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); addToZukan(dec); catVoice.currentTime = 0; catVoice.play().catch(()=>{}); showCustomAlert('🎉 シークレット発見！', `「${CAT_DATA[dec].name}」をゲットしたニャ！`); }); } }, (err) => {}).catch(err => { showCustomAlert('エラー', 'カメラの起動に失敗しました。'); document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); }); });
         document.getElementById('close-qr-btn').addEventListener('click', () => { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); }); });
 
-        // 庭モードのタッチ（おもちゃ）
+        // 庭モードのタッチ
         let isToyActive = false, toyPos = null; 
         const toyBtn = document.getElementById('toy-btn'), toyIcon = document.getElementById('toy-icon'), gardenScreen = document.getElementById('garden-screen');
 
@@ -758,9 +819,28 @@
             if (lastLatLng && !DEBUG_MODE) {
                 const dist = getDistance(lastLatLng.lat, lastLatLng.lng, lat, lng);
                 if (dist > 1 && dist < 50) { 
+                    // ノーマルエサ用の距離加算（50mで1個）
                     distanceWalked += dist; 
-                    if (distanceWalked >= DISTANCE_TO_FOOD) { foodCount++; distanceWalked = 0; document.getElementById('food-count').innerHTML = `${foodCount}`; localStorage.setItem('tobishima_food', foodCount); } 
-                    document.getElementById('distance-progress').innerText = `あと ${Math.ceil(Math.max(0, DISTANCE_TO_FOOD - distanceWalked))}m`; document.getElementById('distance-bar').style.width = `${(distanceWalked / DISTANCE_TO_FOOD) * 100}%`; 
+                    if (distanceWalked >= DISTANCE_TO_FOOD) { 
+                        foodCount++; 
+                        distanceWalked -= DISTANCE_TO_FOOD; 
+                        document.getElementById('food-count').innerHTML = `${foodCount}`; 
+                        localStorage.setItem('tobishima_food', foodCount); 
+                    } 
+                    document.getElementById('distance-progress').innerText = `あと ${Math.ceil(Math.max(0, DISTANCE_TO_FOOD - distanceWalked))}m`; 
+                    document.getElementById('distance-bar').style.width = `${(distanceWalked / DISTANCE_TO_FOOD) * 100}%`; 
+
+                    // 【追加】オート捕獲用の距離加算（効果時間中のみ、1kmごと）
+                    const now = Date.now();
+                    if (autoEndTime > now) {
+                        autoDistanceWalked += dist;
+                        localStorage.setItem('tobishima_auto_dist', autoDistanceWalked);
+                        while (autoDistanceWalked >= 1000) {
+                            autoDistanceWalked -= 1000;
+                            localStorage.setItem('tobishima_auto_dist', autoDistanceWalked);
+                            processAutoCatch();
+                        }
+                    }
                 }
             }
             lastLatLng = { lat: lat, lng: lng }; checkWeather(lat, lng); checkStaySpot(lat, lng);
