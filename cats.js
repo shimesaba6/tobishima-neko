@@ -108,6 +108,20 @@ const CAT_DATA = {
         description: "ＪＡコープ久比店で働いている猫。働き者だがつまみ食いしていまうことも。",
         spawn_time: "all"
     },
+    "tatiuo": {
+        id: "tatiuo",
+        name: "太刀猫",
+        image: "./tatiuo.png",
+        description: "瀬戸内の太刀魚を食べたらなぜか伸びた猫。身長が高くなって喜んでいる。",
+        spawn_time: "all"
+    },
+    "kaki": {
+        id: "kaki",
+        name: "カキ猫",
+        image: "./kaki.png",
+        description: "広島のカキは大きいので、中に入ったら殻が重くて動けなくなった。移動時は住民に運んでもらっている。",
+        spawn_time: "all"
+    },
     "drink": {
         id: "drink",
         name: "自販機猫",
