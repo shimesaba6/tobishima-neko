@@ -149,7 +149,7 @@
         <div id="garden-container" class="w-full h-full relative"></div>
     </div>
     
-    <!-- ねこ図鑑モーダル -->
+    <!-- モーダル群 -->
     <div id="zukan-modal" class="fixed inset-0 bg-black/60 z-[3000] hidden items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-[#fdf6e3] rounded-3xl p-5 w-full max-w-sm shadow-2xl relative interactive border-4 border-indigo-200 flex flex-col max-h-[90dvh]">
             <div class="flex justify-between items-start mb-2"><div class="w-8"></div><div class="text-center flex-1"><h2 class="text-2xl font-black text-indigo-800 leading-none">ねこ図鑑</h2><p id="zukan-progress" class="text-sm font-bold text-indigo-600 mt-1">0 / 0 種類</p></div><button id="close-zukan" class="w-8 h-8 bg-gray-300 text-gray-700 rounded-full font-black flex items-center justify-center shadow-sm active:scale-95 text-sm shrink-0">✖</button></div>
@@ -160,7 +160,6 @@
         </div>
     </div>
 
-    <!-- SA（島ねこ協同組合）ショップモーダル -->
     <div id="shop-modal" class="fixed inset-0 bg-black/60 z-[3000] hidden items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-[#f2f8f2] rounded-3xl p-5 w-full max-w-sm shadow-2xl relative interactive border-4 border-emerald-600 flex flex-col max-h-[92dvh] overflow-hidden">
             <div class="flex justify-between items-center mb-3 border-b-2 border-emerald-200 pb-2"><div class="flex items-center gap-2"><span class="bg-emerald-700 text-white font-black text-xs px-2 py-1 rounded">SA</span><h2 class="text-xl font-black text-emerald-900 leading-none">島ねこ協同組合</h2></div><div class="flex items-center gap-2"><div class="bg-amber-100 border border-amber-300 px-3 py-1 rounded-full flex items-center gap-1 shadow-inner"><span class="text-sm">🪙</span><span id="shop-modal-medals" class="font-black text-sm text-amber-800">0</span></div><button id="close-shop" class="w-8 h-8 bg-gray-300 text-gray-700 rounded-full font-black flex items-center justify-center shadow-sm active:scale-95 text-sm shrink-0">✖</button></div></div>
@@ -173,7 +172,6 @@
         </div>
     </div>
 
-    <!-- 【変更】オート捕獲リザルトモーダル -->
     <div id="auto-result-modal" class="fixed inset-0 bg-black/80 z-[6500] hidden items-center justify-center p-4 backdrop-blur-sm interactive">
         <div class="bg-[#fdf6e3] rounded-3xl p-6 w-full max-w-sm shadow-2xl relative text-center border-4 border-rose-400 max-h-[80dvh] flex flex-col">
             <h2 class="text-2xl font-black text-rose-800 mb-2">移動・休憩の記録</h2>
@@ -269,12 +267,22 @@
         let medalCount = parseInt(localStorage.getItem('tobishima_medals')) || 0;
         let autoFoodCount = parseInt(localStorage.getItem('tobishima_autofood')) || 0;
         
-        // オートタイマー（30分制）用の変数
         let autoEndTime = parseInt(localStorage.getItem('tobishima_auto_endtime')) || 0;
         let autoDistanceWalked = parseFloat(localStorage.getItem('tobishima_auto_dist')) || 0;
-        let lastAutoTimeCatch = parseInt(localStorage.getItem('tobishima_auto_last_time')) || 0;
         let autoResults = JSON.parse(localStorage.getItem('tobishima_autoresults')) || { totalDist: 0, timeTriggers: 0, caught: [], escaped: 0, medals: 0, newCount: 0 };
         let autoTimerInterval = null;
+
+        // 【緊急バグ修正】無限ループ防止のための安全な初期化
+        let lastAutoTimeCatch = parseInt(localStorage.getItem('tobishima_auto_last_time'));
+        if (isNaN(lastAutoTimeCatch) || lastAutoTimeCatch === 0) {
+            lastAutoTimeCatch = Date.now();
+            localStorage.setItem('tobishima_auto_last_time', lastAutoTimeCatch);
+        }
+        // あまりに古いデータ（24時間以上前）が残っていた場合はタイマーを無効化
+        if (autoEndTime > 0 && autoEndTime < Date.now() - (24 * 60 * 60 * 1000)) {
+            autoEndTime = 0;
+            localStorage.setItem('tobishima_auto_endtime', 0);
+        }
 
         function updateMedalUI() {
             document.getElementById('medal-count-main').innerText = medalCount;
@@ -321,24 +329,26 @@
             return `${m}:${s}`;
         }
 
-        // スマホ画面を閉じていた時間をさかのぼって捕獲計算する関数（タイムトラベル方式）
         function checkAutoTimeCatch() {
             const now = Date.now();
-            const catchInterval = 5 * 60 * 1000; // 5分間隔
+            const catchInterval = 5 * 60 * 1000; 
+            let loopCount = 0; // 安全装置：絶対に10回以上ループさせない
             
             if (autoEndTime > now) {
-                // 効果時間中：前回から5分以上経っていればまとめて計算
                 while (now - lastAutoTimeCatch >= catchInterval && lastAutoTimeCatch + catchInterval <= autoEndTime) {
+                    if (loopCount > 10) break;
+                    loopCount++;
                     lastAutoTimeCatch += catchInterval;
                     localStorage.setItem('tobishima_auto_last_time', lastAutoTimeCatch);
-                    processAutoCatch(false); // 時間判定で処理
+                    processAutoCatch(false); 
                 }
             } else if (autoEndTime > 0 && autoEndTime <= now) {
-                // 効果時間が終了しているが、終了時間までの未計算分があれば一気に計算
                 while (autoEndTime - lastAutoTimeCatch >= catchInterval) {
+                    if (loopCount > 10) break;
+                    loopCount++;
                     lastAutoTimeCatch += catchInterval;
                     localStorage.setItem('tobishima_auto_last_time', lastAutoTimeCatch);
-                    processAutoCatch(false); // 時間判定で処理
+                    processAutoCatch(false); 
                 }
             }
         }
@@ -346,14 +356,14 @@
         function updateAutoTimerUI() {
             const now = Date.now();
             if (autoEndTime > now) {
-                checkAutoTimeCatch(); // 画面復帰時のキャッチアップ計算
+                checkAutoTimeCatch(); 
                 const remainSec = Math.floor((autoEndTime - now) / 1000);
                 autoToggleBtn.classList.replace('bg-gray-500/90', 'bg-emerald-500/90');
                 autoToggleBtn.classList.replace('border-white/50', 'border-emerald-200');
                 autoToggleText.innerText = formatTime(remainSec);
             } else {
                 if (autoEndTime > 0) {
-                    checkAutoTimeCatch(); // 最後のキャッチアップ計算
+                    checkAutoTimeCatch(); 
                     autoEndTime = 0;
                     localStorage.setItem('tobishima_auto_endtime', 0);
                     updateAutoResultBtn();
@@ -408,7 +418,6 @@
             showCustomAlert('オートモード開始！', '30分間、自動で捕獲判定をするニャ！<br>・1km移動するごと（成功率80%）<br>・5分経過するごと（成功率50%）<br>移動が終わったら報告をチェックしてニャ。');
         });
 
-        // オート捕獲処理（引数で「距離判定」か「時間判定」かを区別）
         function processAutoCatch(isDistance) {
             if (isDistance) {
                 autoResults.totalDist += 1;
@@ -436,7 +445,6 @@
                     if (randomNum <= 0) { selectedCat = availableCats[i]; break; }
                 }
 
-                // 距離なら80%、時間経過なら50%の成功率
                 let successRate = isDistance ? 0.8 : 0.5;
 
                 if (Math.random() < successRate) {
@@ -461,7 +469,6 @@
             updateAutoResultBtn();
         }
 
-        // リザルト画面を開く処理
         autoResultBtn.addEventListener('click', () => {
             document.getElementById('res-dist').innerText = autoResults.totalDist;
             document.getElementById('res-time').innerText = autoResults.timeTriggers;
@@ -798,7 +805,10 @@
             });
 
             let target = L.latLng(catCurrentLatLng.lat + (Math.random()-0.5)*0.0001, catCurrentLatLng.lng + (Math.random()-0.5)*0.0001);
+            let loopCountCatMove = 0;
             moveInterval = setInterval(() => {
+                loopCountCatMove++;
+                if (loopCountCatMove > 6000) { clearInterval(moveInterval); return; } // 安全装置（最大5分で強制停止）
                 const spd = 0.02; catCurrentLatLng = L.latLng(catCurrentLatLng.lat + (target.lat - catCurrentLatLng.lat)*spd, catCurrentLatLng.lng + (target.lng - catCurrentLatLng.lng)*spd); activeCatMarker.setLatLng(catCurrentLatLng);
                 const img = document.getElementById('cat-image');
                 if (img) { if ((target.lng - catCurrentLatLng.lng) > 0) { img.classList.remove('face-left'); img.classList.add('face-right'); } else { img.classList.remove('face-right'); img.classList.add('face-left'); }
@@ -875,13 +885,16 @@
                     document.getElementById('distance-bar').style.width = `${(distanceWalked / DISTANCE_TO_FOOD) * 100}%`; 
 
                     const now = Date.now();
+                    let loopCountDist = 0; // 安全装置：10回以上の連続処理を防ぐ
                     if (autoEndTime > now) {
                         autoDistanceWalked += dist;
                         localStorage.setItem('tobishima_auto_dist', autoDistanceWalked);
                         while (autoDistanceWalked >= 1000) {
+                            if (loopCountDist > 10) break;
+                            loopCountDist++;
                             autoDistanceWalked -= 1000;
                             localStorage.setItem('tobishima_auto_dist', autoDistanceWalked);
-                            processAutoCatch(true); // 距離判定として処理
+                            processAutoCatch(true); 
                         }
                     }
                 }
