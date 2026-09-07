@@ -45,6 +45,20 @@ const CAT_DATA = {
         description: "弓道が得意な猫。みかん農家をしている。よくまめな食堂で夕飯を食べる",
         spawn_time: "all"
     },
+    "lemoneko": {
+        id: "lemoneko",
+        name: "レモン猫",
+        image: "./lemoneko.png",
+        description: "大崎下島はレモン発祥の地。発祥の地を生きる猫として誇りを持っている。あくまで猫。",
+        spawn_time: "all"
+    },
+    "osusowake": {
+        id: "osusowake",
+        name: "おすそわけ猫",
+        image: "./osusowake.png",
+        description: "家の野菜（農床）をおすそわけに来た猫。平気でネギを持ってくるので、正直猫なのか怪しい。",
+        spawn_time: "all"
+    },
     "umioyaji": {
         id: "umioyaji",
         name: "海おじ猫",
