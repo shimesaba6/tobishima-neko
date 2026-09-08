@@ -45,6 +45,13 @@ const CAT_DATA = {
         description: "弓道が得意な猫。みかん農家をしている。よくまめな食堂で夕飯を食べる",
         spawn_time: "all"
     },
+    "kagamimoti": {
+        id: "kagamimoti",
+        name: "かがみもち猫",
+        image: "./kagamimoti.png",
+        description: "餅の上は自分の役目だと思い込んでいるみかん猫。早く食べたいと催促してくる。",
+        spawn_time: "all"
+    },
     "lemoneko": {
         id: "lemoneko",
         name: "レモン猫",
