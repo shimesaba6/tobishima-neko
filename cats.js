@@ -38,6 +38,13 @@ const CAT_DATA = {
         description: "のんびり魚を狙っている猫。餌を自分で食べてしまう。",
         spawn_time: "all"
     },
+    "keki": {
+        id: "keki",
+        name: "釣り猫",
+        image: "./keki.png",
+        description: "島でケーキ屋を営んでいる。好きなものは目玉焼き。ケーキではない。",
+        spawn_time: "all"
+    },
     "yumineko": {
         id: "yumineko",
         name: "ゆみ猫",
