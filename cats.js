@@ -40,9 +40,9 @@ const CAT_DATA = {
     },
     "keki": {
         id: "keki",
-        name: "釣り猫",
+        name: "ケーキ屋猫",
         image: "./keki.png",
-        description: "島でケーキ屋を営んでいる。好きなものは目玉焼き。ケーキではない。",
+        description: "島でケーキ屋を営んでいる。好物は目玉焼き。ケーキではない。",
         spawn_time: "all"
     },
     "yumineko": {
@@ -71,6 +71,20 @@ const CAT_DATA = {
         name: "おすそわけ猫",
         image: "./osusowake.png",
         description: "家の野菜（農床）をおすそわけに来た猫。平気でネギを持ってくるので、正直猫なのか怪しい。",
+        spawn_time: "all"
+    },
+     "bbq": {
+        id: "bbq",
+        name: "BBQ猫",
+        image: "./bbq.png",
+        description: "大崎下島のグランピングに来たパリピ猫。移住を考えている。",
+        spawn_time: "all"
+    },
+     "mati": {
+        id: "mati",
+        name: "潮待ち猫",
+        image: "./mati.png",
+        description: "船を出すため御手洗で良い潮をのんびり待っている猫。のんびりしすぎてよくタイミングを逃す。",
         spawn_time: "all"
     },
     "umioyaji": {
