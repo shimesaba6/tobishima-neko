@@ -246,6 +246,17 @@ const CAT_DATA = {
         spawn_time: "all",
         spawn_weather: "rain" 
     },
+    "haru_cat": {
+        id: "haru_cat",
+        name: "ハルねこ",
+        image: "./harucat.png",
+        description: "門前仲町のとあるエリアに生息するレアな猫。飼い主は栗が好きらしい。",
+        spawn_time: "all",
+        spawn_lat: 35.6707182,  // ハルさんの家の緯度
+        spawn_lng: 139.7968646, // ハルさんの家の経度
+        spawn_radius: 100,      // 半径100m以内
+        spawn_rate: 50          // テスト用にかなり出現しやすくしています（本番は10くらいに下げてください）
+    },
     "tasogare": {
         id: "tasogare",
         name: "たそがれ猫",
