@@ -315,6 +315,14 @@
             document.getElementById('food-count').innerHTML = `${foodCount}`;
         }
 
+        // --- 追加: インストール日と1泊判定 ---
+        let installDate = localStorage.getItem('tobishima_install_date');
+        if (!installDate) {
+            installDate = todayStr;
+            localStorage.setItem('tobishima_install_date', installDate);
+        }
+        const hasStayedOvernight = (installDate !== todayStr);
+
         // ==========================================
         // オート機能（距離＋時間ハイブリッド）＆リザルト処理
         // ==========================================
@@ -431,7 +439,23 @@
                 if (cat.is_special) continue; 
                 const timeMatch = (!cat.spawn_time || cat.spawn_time === "all" || cat.spawn_time === currentTimeState);
                 const weatherMatch = (!cat.spawn_weather || cat.spawn_weather === "all" || cat.spawn_weather === currentWeatherState);
-                if (timeMatch && weatherMatch) availableCats.push(cat);
+                
+                // --- 1泊条件判定 ---
+                let conditionMatch = true;
+                if (cat.spawn_condition === "overnight" && !hasStayedOvernight) {
+                    conditionMatch = false;
+                }
+
+                // --- オート捕獲時の場所判定 ---
+                let locationMatch = true;
+                if (cat.spawn_lat && cat.spawn_lng && cat.spawn_radius && lastLatLng) {
+                    const dist = getDistance(lastLatLng.lat, lastLatLng.lng, cat.spawn_lat, cat.spawn_lng);
+                    if (dist > cat.spawn_radius) {
+                        locationMatch = false;
+                    }
+                }
+
+                if (timeMatch && weatherMatch && conditionMatch && locationMatch) availableCats.push(cat);
             }
 
             if (availableCats.length > 0) {
@@ -747,6 +771,7 @@
         }
 
         function spawnSpecificCat(catId, playerLatLng) { if (!CAT_DATA[catId] || isCatSpawned) return; executeSpawn(CAT_DATA[catId], playerLatLng); }
+        
         function spawnRandomCat(playerLatLng) {
             if (isCatSpawned) return;
             const availableCats = [];
@@ -754,7 +779,23 @@
                 const cat = CAT_DATA[key]; if (cat.is_special) continue; 
                 const timeMatch = (!cat.spawn_time || cat.spawn_time === "all" || cat.spawn_time === currentTimeState);
                 const weatherMatch = (!cat.spawn_weather || cat.spawn_weather === "all" || cat.spawn_weather === currentWeatherState);
-                if (timeMatch && weatherMatch) availableCats.push(cat);
+                
+                // --- 1泊条件判定 ---
+                let conditionMatch = true;
+                if (cat.spawn_condition === "overnight" && !hasStayedOvernight) {
+                    conditionMatch = false;
+                }
+
+                // --- ランダム出現時の場所限定判定 ---
+                let locationMatch = true;
+                if (cat.spawn_lat && cat.spawn_lng && cat.spawn_radius) {
+                    const dist = getDistance(playerLatLng.lat, playerLatLng.lng, cat.spawn_lat, cat.spawn_lng);
+                    if (dist > cat.spawn_radius) {
+                        locationMatch = false;
+                    }
+                }
+
+                if (timeMatch && weatherMatch && conditionMatch && locationMatch) availableCats.push(cat);
             }
             if (availableCats.length === 0) return;
 
@@ -833,19 +874,50 @@
         }
         setInterval(checkTime, 60000); checkTime();
 
+        // --- GPS飛び対策用の猶予タイマー変数 ---
+        let leaveTimerTimeout = null; 
+
         function checkStaySpot(lat, lng) {
             let found = STAY_SPOTS.find(s => getDistance(lat, lng, s.lat, s.lng) <= s.radius);
+            
             if (found) {
+                // ① エリア内にいる場合
+                if (leaveTimerTimeout) {
+                    clearTimeout(leaveTimerTimeout);
+                    leaveTimerTimeout = null;
+                }
+
                 if (!activeStaySpot || activeStaySpot.id !== found.id) {
-                    activeStaySpot = found; stayStartTime = Date.now(); document.getElementById('stay-ui').classList.remove('hidden');
+                    activeStaySpot = found; 
+                    stayStartTime = Date.now(); 
+                    document.getElementById('stay-ui').classList.remove('hidden');
+                    
                     if(stayTimerInterval) clearInterval(stayTimerInterval);
                     stayTimerInterval = setInterval(() => {
                         let remain = activeStaySpot.timeReq - Math.floor((Date.now() - stayStartTime) / 1000);
-                        if(remain > 0) { document.getElementById('stay-text').innerText = `${activeStaySpot.name}で休憩中… あと${Math.floor(remain / 60)}分${remain % 60}秒`; } 
-                        else { clearInterval(stayTimerInterval); document.getElementById('stay-text').innerText = `✨ ${activeStaySpot.name}達成！ ✨`; spawnSpecificCat(activeStaySpot.catId, L.latLng(lat, lng)); activeStaySpot = null; setTimeout(() => document.getElementById('stay-ui').classList.add('hidden'), 3000); }
+                        if(remain > 0) { 
+                            document.getElementById('stay-text').innerText = `${activeStaySpot.name}で休憩中… あと${Math.floor(remain / 60)}分${remain % 60}秒`; 
+                        } else { 
+                            clearInterval(stayTimerInterval); 
+                            document.getElementById('stay-text').innerText = `✨ ${activeStaySpot.name}達成！ ✨`; 
+                            spawnSpecificCat(activeStaySpot.catId, L.latLng(lat, lng)); 
+                            activeStaySpot = null; 
+                            setTimeout(() => document.getElementById('stay-ui').classList.add('hidden'), 3000); 
+                        }
                     }, 1000);
                 }
-            } else { activeStaySpot = null; if(stayTimerInterval) clearInterval(stayTimerInterval); document.getElementById('stay-ui').classList.add('hidden'); }
+            } else {
+                // ② エリア外に出た場合（2分間のGPSブレ猶予）
+                if (activeStaySpot && !leaveTimerTimeout) {
+                    document.getElementById('stay-text').innerText = `GPSを探しています...（一時停止中）`; 
+                    leaveTimerTimeout = setTimeout(() => {
+                        activeStaySpot = null; 
+                        if(stayTimerInterval) clearInterval(stayTimerInterval); 
+                        document.getElementById('stay-ui').classList.add('hidden');
+                        leaveTimerTimeout = null;
+                    }, 120000); 
+                }
+            }
         }
 
         let currentOtomoRenderedId = null;
