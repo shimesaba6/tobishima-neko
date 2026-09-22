@@ -24,6 +24,16 @@
         
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
         .bounce-active { animation: bounce 0.5s ease 2; }
+        
+        /* タイトルロゴのBPM同期アニメーション (BPM 147 = 約408ms) */
+        @keyframes heartbeat { 
+            0% { transform: scale(1); } 
+            15% { transform: scale(1.05); } /* 少し拡大 */
+            30% { transform: scale(1); } /* すぐに戻る */
+            100% { transform: scale(1); } 
+        }
+        .heartbeat-active { animation: heartbeat 0.408s infinite; }
+
         .face-left { transform: scaleX(-1); }
         .face-right { transform: scaleX(1); }
         .cat-wrapper { transition: transform 0.3s ease, opacity 0.5s ease, width 0.3s ease, height 0.3s ease; filter: drop-shadow(0 6px 6px rgba(0,0,0,0.5)); }
@@ -61,8 +71,8 @@
         <!-- 背景の猫アニメーションコンテナ -->
         <div id="title-cats-container" class="absolute inset-0 pointer-events-none z-0"></div>
 
-        <!-- タイトルロゴ画像（少しだけ小さく調整） -->
-        <img src="./title.png" alt="島ねこコレクション" class="relative z-10 w-[70%] max-w-[280px] mb-4 drop-shadow-md object-contain">
+        <!-- タイトルロゴ画像（少しだけ小さく調整＋アニメーション用のID追加） -->
+        <img src="./title.png" id="title-logo" alt="島ねこコレクション" class="relative z-10 w-[70%] max-w-[280px] mb-4 drop-shadow-md object-contain transition-transform duration-300">
         
         <!-- はじめるボタン（少しだけスリムに調整） -->
         <button id="start-btn" class="relative z-10 bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-full font-bold text-xl shadow-xl transition-transform hover:scale-105 border-4 border-white interactive">はじめる</button>
@@ -297,6 +307,8 @@
         const titleBgm = new Audio('./main_theme.mp3');
         titleBgm.loop = true;
         let isBgmPlaying = false;
+        
+        const titleLogo = document.getElementById('title-logo');
 
         function fadeInAudio(audio, targetVol = 0.3, duration = 2000) {
             audio.volume = 0;
@@ -333,11 +345,17 @@
                 fadeInAudio(titleBgm, 0.3, 2000); 
                 btn.innerHTML = '<span>🔊 BGM再生中...（タップで停止）</span>';
                 btn.classList.replace('bg-orange-50', 'bg-orange-200');
+                
+                // ロゴの鼓動アニメーションを開始
+                if (titleLogo) titleLogo.classList.add('heartbeat-active');
             } else {
                 isBgmPlaying = false;
                 fadeOutAudio(titleBgm, 500); 
                 btn.innerHTML = '<span>🎵 BGMを再生（♪猫発見！）</span>';
                 btn.classList.replace('bg-orange-200', 'bg-orange-50');
+                
+                // ロゴの鼓動アニメーションを停止
+                if (titleLogo) titleLogo.classList.remove('heartbeat-active');
             }
         });
 
