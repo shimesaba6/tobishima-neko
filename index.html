@@ -56,19 +56,27 @@
 
     <div class="rain-layer"></div>
 
-    <div id="start-screen" class="absolute inset-0 bg-[#fdf6e3] flex flex-col items-center justify-center z-[4000] transition-opacity duration-500">
+    <div id="start-screen" class="absolute inset-0 bg-[#fdf6e3] flex flex-col items-center justify-center z-[4000] transition-opacity duration-500 overflow-hidden">
         
-        <!-- タイトルロゴ画像 -->
-        <img src="./title.png" alt="島ねこコレクション" class="w-4/5 max-w-sm mb-6 drop-shadow-md object-contain">
-        
-        <button id="start-btn" class="bg-orange-500 hover:bg-orange-600 text-white px-10 py-5 rounded-full font-bold text-2xl shadow-xl transition-transform hover:scale-105 border-4 border-white interactive">はじめる</button>
-        <p class="text-sm text-gray-600 mt-4 font-bold">※音が鳴ります</p>
+        <!-- 背景の猫アニメーションコンテナ -->
+        <div id="title-cats-container" class="absolute inset-0 pointer-events-none z-0"></div>
 
-        <!-- β版の注意書きとフォームへのリンクを追加 -->
-        <div class="mt-8 text-center bg-white/60 p-4 rounded-xl border border-orange-200 shadow-sm interactive pointer-events-auto">
+        <!-- タイトルロゴ画像 -->
+        <img src="./title.png" alt="島ねこコレクション" class="relative z-10 w-4/5 max-w-sm mb-6 drop-shadow-md object-contain">
+        
+        <button id="start-btn" class="relative z-10 bg-orange-500 hover:bg-orange-600 text-white px-10 py-5 rounded-full font-bold text-2xl shadow-xl transition-transform hover:scale-105 border-4 border-white interactive">はじめる</button>
+        <p class="relative z-10 text-sm text-gray-600 mt-4 font-bold">※音が鳴ります</p>
+
+        <!-- BGM再生ボタン -->
+        <button id="title-bgm-btn" class="relative z-10 mt-4 bg-orange-50 text-orange-700 px-5 py-2 rounded-full font-bold text-sm border-2 border-orange-300 shadow-sm interactive transition-transform active:scale-95 flex items-center gap-2">
+            <span>🎵 BGMを再生（♪猫発見！）</span>
+        </button>
+
+        <!-- β版の注意書きとフォームへのリンク -->
+        <div class="relative z-10 mt-8 text-center bg-white/60 p-4 rounded-xl border border-orange-200 shadow-sm interactive pointer-events-auto">
             <p class="text-sm font-black text-orange-700 mb-1">🐾 現在β版（テスト中）です 🐾</p>
             <p class="text-xs font-bold text-gray-600 mb-3">バグがあったらご愛嬌ニャ！</p>
-            <a href="【ここにフォームのURLを貼り付けてください】" target="_blank" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-full text-xs shadow transition-transform active:scale-95">✉️ ご意見・バグ報告はこちら</a>
+            <a href="https://forms.gle/ypBhzWaBFP1bYBHZ9" target="_blank" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-full text-xs shadow transition-transform active:scale-95">✉️ ご意見・バグ報告はこちら</a>
         </div>
     </div>
 
@@ -281,6 +289,128 @@
         let autoDistanceWalked = parseFloat(localStorage.getItem('tobishima_auto_dist')) || 0;
         let autoResults = JSON.parse(localStorage.getItem('tobishima_autoresults')) || { totalDist: 0, timeTriggers: 0, caught: [], escaped: 0, medals: 0, newCount: 0 };
         let autoTimerInterval = null;
+
+        // ==========================================
+        // タイトル画面のBGM制御と猫アニメーション
+        // ==========================================
+        const titleBgm = new Audio('./main_theme.mp3');
+        titleBgm.loop = true;
+        let isBgmPlaying = false;
+
+        function fadeInAudio(audio, targetVol = 0.3, duration = 2000) {
+            audio.volume = 0;
+            audio.play().catch(e => console.log('BGM再生エラー:', e));
+            const step = targetVol / (duration / 50);
+            const fadeTimer = setInterval(() => {
+                if (audio.volume + step < targetVol) {
+                    audio.volume += step;
+                } else {
+                    audio.volume = targetVol;
+                    clearInterval(fadeTimer);
+                }
+            }, 50);
+        }
+
+        function fadeOutAudio(audio, duration = 1000) {
+            if (audio.paused) return;
+            const step = audio.volume / (duration / 50);
+            const fadeTimer = setInterval(() => {
+                if (audio.volume - step > 0) {
+                    audio.volume -= step;
+                } else {
+                    audio.volume = 0;
+                    audio.pause();
+                    clearInterval(fadeTimer);
+                }
+            }, 50);
+        }
+
+        document.getElementById('title-bgm-btn').addEventListener('click', (e) => {
+            const btn = e.currentTarget;
+            if (!isBgmPlaying) {
+                isBgmPlaying = true;
+                fadeInAudio(titleBgm, 0.3, 2000); 
+                btn.innerHTML = '<span>🔊 BGM再生中...（タップで停止）</span>';
+                btn.classList.replace('bg-orange-50', 'bg-orange-200');
+            } else {
+                isBgmPlaying = false;
+                fadeOutAudio(titleBgm, 500); 
+                btn.innerHTML = '<span>🎵 BGMを再生（♪猫発見！）</span>';
+                btn.classList.replace('bg-orange-200', 'bg-orange-50');
+            }
+        });
+
+        // タイトル画面の猫アニメーション処理
+        let titleCatInterval = null;
+        const titleCatsContainer = document.getElementById('title-cats-container');
+
+        function spawnTitleCat() {
+            if (!titleCatsContainer || document.getElementById('start-screen').style.opacity === '0') return;
+            
+            const catKeys = Object.keys(CAT_DATA);
+            const randomKey = catKeys[Math.floor(Math.random() * catKeys.length)];
+            const cat = CAT_DATA[randomKey];
+            const isDiscovered = zukanData.includes(randomKey);
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'absolute pointer-events-none';
+            
+            // 出現位置（縦）を下から10%〜80%の範囲にランダム設定
+            const bottomPercent = Math.random() * 70 + 10;
+            wrapper.style.bottom = `${bottomPercent}%`;
+            wrapper.style.zIndex = Math.floor(100 - bottomPercent); // 手前ほど大きくする
+
+            const img = document.createElement('img');
+            img.src = cat.image;
+            img.className = 'object-contain drop-shadow-md';
+            const size = Math.floor(Math.random() * 30 + 50); 
+            img.style.width = `${size}px`;
+            img.style.height = `${size}px`;
+
+            // 未発見ならシルエット化
+            if (!isDiscovered) {
+                img.style.filter = 'brightness(0) opacity(0.4)';
+            }
+
+            const goRight = Math.random() > 0.5;
+            const duration = Math.random() * 3000 + 4000; 
+            
+            const screenWidth = window.innerWidth;
+            const startX = goRight ? -100 : screenWidth + 100;
+            const endX = goRight ? screenWidth + 100 : -100;
+            const scaleX = goRight ? 1 : -1; // 進行方向へ向かせる
+            
+            img.style.transform = `scaleX(${scaleX})`;
+
+            wrapper.appendChild(img);
+            titleCatsContainer.appendChild(wrapper);
+
+            // X軸の移動
+            wrapper.animate([
+                { transform: `translateX(${startX}px)` },
+                { transform: `translateX(${endX}px)` }
+            ], {
+                duration: duration,
+                easing: 'linear'
+            }).onfinish = () => {
+                wrapper.remove();
+            };
+
+            // ピョンピョン跳ねるアニメーション
+            img.animate([
+                { transform: `scaleX(${scaleX}) translateY(0px)` },
+                { transform: `scaleX(${scaleX}) translateY(-10px)` },
+                { transform: `scaleX(${scaleX}) translateY(0px)` }
+            ], {
+                duration: 400,
+                iterations: Infinity,
+                easing: 'ease-in-out'
+            });
+        }
+
+        // 2秒ごとに猫を生成
+        titleCatInterval = setInterval(spawnTitleCat, 2000);
+
 
         // 【緊急バグ修正】無限ループ防止のための安全な初期化
         let lastAutoTimeCatch = parseInt(localStorage.getItem('tobishima_auto_last_time'));
@@ -589,7 +719,14 @@
             }
         };
 
+        // 「はじめる」ボタン押下時の処理
         document.getElementById('start-btn').addEventListener('click', () => {
+            // BGMフェードアウト処理
+            if (isBgmPlaying) fadeOutAudio(titleBgm, 1500); 
+            
+            // 猫のアニメーション生成をストップ
+            if (titleCatInterval) clearInterval(titleCatInterval);
+
             catVoice.play().then(() => { catVoice.pause(); catVoice.currentTime = 0; }).catch(() => {});
             document.getElementById('start-screen').style.opacity = '0'; 
             setTimeout(() => { document.getElementById('start-screen').style.display = 'none'; }, 500); 
