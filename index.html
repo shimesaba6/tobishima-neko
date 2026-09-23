@@ -28,8 +28,8 @@
         /* タイトルロゴのBPM同期アニメーション (BPM 147 = 約408ms) */
         @keyframes heartbeat { 
             0% { transform: scale(1); } 
-            15% { transform: scale(1.05); } /* 少し拡大 */
-            30% { transform: scale(1); } /* すぐに戻る */
+            15% { transform: scale(1.05); } 
+            30% { transform: scale(1); } 
             100% { transform: scale(1); } 
         }
         .heartbeat-active { animation: heartbeat 0.408s infinite; }
@@ -67,23 +67,16 @@
     <div class="rain-layer"></div>
 
     <div id="start-screen" class="absolute inset-0 bg-[#fdf6e3] flex flex-col items-center justify-center z-[4000] transition-opacity duration-500 overflow-y-auto overflow-x-hidden pb-12 pt-6">
-        
-        <!-- 背景の猫アニメーションコンテナ -->
         <div id="title-cats-container" class="absolute inset-0 pointer-events-none z-0"></div>
-
-        <!-- タイトルロゴ画像（少しだけ小さく調整＋アニメーション用のID追加） -->
         <img src="./title.png" id="title-logo" alt="島ねこコレクション" class="relative z-10 w-[70%] max-w-[280px] mb-4 drop-shadow-md object-contain transition-transform duration-300">
         
-        <!-- はじめるボタン（少しだけスリムに調整） -->
         <button id="start-btn" class="relative z-10 bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-full font-bold text-xl shadow-xl transition-transform hover:scale-105 border-4 border-white interactive">はじめる</button>
         <p class="relative z-10 text-xs text-gray-600 mt-3 font-bold">※音が鳴ります</p>
 
-        <!-- BGM再生ボタン -->
         <button id="title-bgm-btn" class="relative z-10 mt-3 bg-orange-50 text-orange-700 px-4 py-2 rounded-full font-bold text-sm border-2 border-orange-300 shadow-sm interactive transition-transform active:scale-95 flex items-center gap-2">
             <span>🎵 BGMを再生（♪猫発見！）</span>
         </button>
 
-        <!-- β版の注意書きとフォームへのリンク（余白と文字サイズを微調整） -->
         <div class="relative z-10 mt-6 mb-4 text-center bg-white/60 p-3 rounded-xl border border-orange-200 shadow-sm interactive pointer-events-auto">
             <p class="text-xs font-black text-orange-700 mb-1">🐾 現在β版（テスト中）です 🐾</p>
             <p class="text-[10px] font-bold text-gray-600 mb-2">バグがあったらご愛嬌ニャ！</p>
@@ -98,7 +91,6 @@
         </div>
 
         <div class="ui-layer top-0 left-0 w-full p-4 pt-6 flex justify-between items-start pointer-events-none">
-            <!-- オートトグル -->
             <button id="auto-toggle-btn" class="interactive bg-gray-500/90 text-white w-16 h-16 rounded-2xl shadow-md text-[10px] font-bold border-2 border-white/50 flex flex-col items-center justify-center leading-none transition-colors">
                 <span class="text-xl mb-0.5">🍱</span>
                 <span id="auto-toggle-text" class="tracking-tighter">OFF</span>
@@ -113,7 +105,6 @@
                 </div>
             </div>
 
-            <!-- 報告ボタン -->
             <button id="auto-result-btn" class="interactive hidden bg-rose-500 text-white w-14 h-14 rounded-2xl shadow-md text-[10px] font-bold border-2 border-white/50 flex flex-col items-center justify-center leading-none animate-bounce shrink-0">
                 <span class="text-xl mb-0.5">✉️</span>
                 <span>報告アリ</span>
@@ -125,7 +116,6 @@
             <button id="recenter-btn" class="bg-blue-500 text-white px-6 py-3 rounded-full font-bold text-base shadow-lg border-2 border-white interactive flex items-center gap-2">📍 現在地に戻る</button>
         </div>
 
-        <!-- 下部メインUI -->
         <div class="ui-layer bottom-0 left-0 w-full p-3 pb-6 flex justify-between items-end gap-2">
             <div class="flex flex-col gap-2">
                 <button id="go-garden-btn" class="w-13 h-13 interactive transition-transform active:scale-95 drop-shadow-lg rounded-2xl overflow-hidden bg-white/50">
@@ -302,42 +292,51 @@
         let autoTimerInterval = null;
 
         // ==========================================
-        // タイトル画面のBGM制御と猫アニメーション
+        // 各種BGMの読み込みと制御
         // ==========================================
         const titleBgm = new Audio('./main_theme.mp3');
         titleBgm.loop = true;
+        const shopBgm = new Audio('./super.mp3');
+        shopBgm.loop = true;
+        const gardenBgm = new Audio('./garden_outside.mp3');
+        gardenBgm.loop = true;
+        const minigameBgm = new Audio('./minigame.mp3'); // ※ファイル名を修正してください
+        minigameBgm.loop = true;
+
         let isBgmPlaying = false;
-        
         const titleLogo = document.getElementById('title-logo');
 
         function fadeInAudio(audio, targetVol = 0.3, duration = 2000) {
+            if (audio.fadeTimer) clearInterval(audio.fadeTimer);
             audio.volume = 0;
             audio.play().catch(e => console.log('BGM再生エラー:', e));
             const step = targetVol / (duration / 50);
-            const fadeTimer = setInterval(() => {
+            audio.fadeTimer = setInterval(() => {
                 if (audio.volume + step < targetVol) {
                     audio.volume += step;
                 } else {
                     audio.volume = targetVol;
-                    clearInterval(fadeTimer);
+                    clearInterval(audio.fadeTimer);
                 }
             }, 50);
         }
 
         function fadeOutAudio(audio, duration = 1000) {
             if (audio.paused) return;
+            if (audio.fadeTimer) clearInterval(audio.fadeTimer);
             const step = audio.volume / (duration / 50);
-            const fadeTimer = setInterval(() => {
+            audio.fadeTimer = setInterval(() => {
                 if (audio.volume - step > 0) {
                     audio.volume -= step;
                 } else {
                     audio.volume = 0;
                     audio.pause();
-                    clearInterval(fadeTimer);
+                    clearInterval(audio.fadeTimer);
                 }
             }, 50);
         }
 
+        // タイトル画面BGM
         document.getElementById('title-bgm-btn').addEventListener('click', (e) => {
             const btn = e.currentTarget;
             if (!isBgmPlaying) {
@@ -345,16 +344,12 @@
                 fadeInAudio(titleBgm, 0.3, 2000); 
                 btn.innerHTML = '<span>🔊 BGM再生中...（タップで停止）</span>';
                 btn.classList.replace('bg-orange-50', 'bg-orange-200');
-                
-                // ロゴの鼓動アニメーションを開始
                 if (titleLogo) titleLogo.classList.add('heartbeat-active');
             } else {
                 isBgmPlaying = false;
                 fadeOutAudio(titleBgm, 500); 
                 btn.innerHTML = '<span>🎵 BGMを再生（♪猫発見！）</span>';
                 btn.classList.replace('bg-orange-200', 'bg-orange-50');
-                
-                // ロゴの鼓動アニメーションを停止
                 if (titleLogo) titleLogo.classList.remove('heartbeat-active');
             }
         });
@@ -374,10 +369,9 @@
             const wrapper = document.createElement('div');
             wrapper.className = 'absolute pointer-events-none';
             
-            // 出現位置（縦）を下から10%〜80%の範囲にランダム設定
             const bottomPercent = Math.random() * 70 + 10;
             wrapper.style.bottom = `${bottomPercent}%`;
-            wrapper.style.zIndex = Math.floor(100 - bottomPercent); // 手前ほど大きくする
+            wrapper.style.zIndex = Math.floor(100 - bottomPercent);
 
             const img = document.createElement('img');
             img.src = cat.image;
@@ -386,10 +380,7 @@
             img.style.width = `${size}px`;
             img.style.height = `${size}px`;
 
-            // 未発見ならシルエット化
-            if (!isDiscovered) {
-                img.style.filter = 'brightness(0) opacity(0.4)';
-            }
+            if (!isDiscovered) img.style.filter = 'brightness(0) opacity(0.4)';
 
             const goRight = Math.random() > 0.5;
             const duration = Math.random() * 3000 + 4000; 
@@ -397,47 +388,32 @@
             const screenWidth = window.innerWidth;
             const startX = goRight ? -100 : screenWidth + 100;
             const endX = goRight ? screenWidth + 100 : -100;
-            const scaleX = goRight ? 1 : -1; // 進行方向へ向かせる
+            const scaleX = goRight ? 1 : -1; 
             
             img.style.transform = `scaleX(${scaleX})`;
 
             wrapper.appendChild(img);
             titleCatsContainer.appendChild(wrapper);
 
-            // X軸の移動
             wrapper.animate([
                 { transform: `translateX(${startX}px)` },
                 { transform: `translateX(${endX}px)` }
-            ], {
-                duration: duration,
-                easing: 'linear'
-            }).onfinish = () => {
-                wrapper.remove();
-            };
+            ], { duration: duration, easing: 'linear' }).onfinish = () => { wrapper.remove(); };
 
-            // ピョンピョン跳ねるアニメーション
             img.animate([
                 { transform: `scaleX(${scaleX}) translateY(0px)` },
                 { transform: `scaleX(${scaleX}) translateY(-10px)` },
                 { transform: `scaleX(${scaleX}) translateY(0px)` }
-            ], {
-                duration: 400,
-                iterations: Infinity,
-                easing: 'ease-in-out'
-            });
+            ], { duration: 400, iterations: Infinity, easing: 'ease-in-out' });
         }
 
-        // 2秒ごとに猫を生成
         titleCatInterval = setInterval(spawnTitleCat, 2000);
 
-
-        // 【緊急バグ修正】無限ループ防止のための安全な初期化
         let lastAutoTimeCatch = parseInt(localStorage.getItem('tobishima_auto_last_time'));
         if (isNaN(lastAutoTimeCatch) || lastAutoTimeCatch === 0) {
             lastAutoTimeCatch = Date.now();
             localStorage.setItem('tobishima_auto_last_time', lastAutoTimeCatch);
         }
-        // あまりに古いデータ（24時間以上前）が残っていた場合はタイマーを無効化
         if (autoEndTime > 0 && autoEndTime < Date.now() - (24 * 60 * 60 * 1000)) {
             autoEndTime = 0;
             localStorage.setItem('tobishima_auto_endtime', 0);
@@ -474,7 +450,6 @@
             document.getElementById('food-count').innerHTML = `${foodCount}`;
         }
 
-        // --- 追加: インストール日と1泊判定 ---
         let installDate = localStorage.getItem('tobishima_install_date');
         if (!installDate) {
             installDate = todayStr;
@@ -482,9 +457,6 @@
         }
         const hasStayedOvernight = (installDate !== todayStr);
 
-        // ==========================================
-        // オート機能（距離＋時間ハイブリッド）＆リザルト処理
-        // ==========================================
         const autoToggleBtn = document.getElementById('auto-toggle-btn');
         const autoToggleText = document.getElementById('auto-toggle-text');
         const autoResultBtn = document.getElementById('auto-result-btn');
@@ -499,7 +471,7 @@
         function checkAutoTimeCatch() {
             const now = Date.now();
             const catchInterval = 5 * 60 * 1000; 
-            let loopCount = 0; // 安全装置：絶対に10回以上ループさせない
+            let loopCount = 0; 
             
             if (autoEndTime > now) {
                 while (now - lastAutoTimeCatch >= catchInterval && lastAutoTimeCatch + catchInterval <= autoEndTime) {
@@ -561,18 +533,11 @@
 
         autoToggleBtn.addEventListener('click', () => {
             const now = Date.now();
-            if (autoEndTime > now) {
-                showCustomAlert('効果時間中ニャ', '現在おきエサの効果が発動中ニャ！<br>残り時間が切れるまで、裏側で猫を探し続けるニャ！');
-                return;
-            }
-            if (autoFoodCount <= 0) {
-                showCustomAlert('おきエサがないニャ', 'SA（島ねこ協同組合）で「オート用おきエサ」を買ってきてニャ！');
-                return;
-            }
+            if (autoEndTime > now) { showCustomAlert('効果時間中ニャ', '現在おきエサの効果が発動中ニャ！<br>残り時間が切れるまで、裏側で猫を探し続けるニャ！'); return; }
+            if (autoFoodCount <= 0) { showCustomAlert('おきエサがないニャ', 'SA（島ねこ協同組合）で「オート用おきエサ」を買ってきてニャ！'); return; }
             
             autoFoodCount--;
             localStorage.setItem('tobishima_autofood', autoFoodCount);
-            
             autoEndTime = now + (30 * 60 * 1000);
             lastAutoTimeCatch = now;
             localStorage.setItem('tobishima_auto_endtime', autoEndTime);
@@ -581,39 +546,24 @@
             updateAutoTimerUI();
             if (autoTimerInterval) clearInterval(autoTimerInterval);
             autoTimerInterval = setInterval(updateAutoTimerUI, 1000);
-            
             showCustomAlert('オートモード開始！', '30分間、自動で捕獲判定をするニャ！<br>・1km移動するごと（成功率80%）<br>・5分経過するごと（成功率50%）<br>移動が終わったら報告をチェックしてニャ。');
         });
 
         function processAutoCatch(isDistance) {
-            if (isDistance) {
-                autoResults.totalDist += 1;
-            } else {
-                autoResults.timeTriggers += 1;
-            }
-
+            if (isDistance) { autoResults.totalDist += 1; } else { autoResults.timeTriggers += 1; }
             const availableCats = [];
             for (const key in CAT_DATA) {
                 const cat = CAT_DATA[key]; 
                 if (cat.is_special) continue; 
                 const timeMatch = (!cat.spawn_time || cat.spawn_time === "all" || cat.spawn_time === currentTimeState);
                 const weatherMatch = (!cat.spawn_weather || cat.spawn_weather === "all" || cat.spawn_weather === currentWeatherState);
-                
-                // --- 1泊条件判定 ---
                 let conditionMatch = true;
-                if (cat.spawn_condition === "overnight" && !hasStayedOvernight) {
-                    conditionMatch = false;
-                }
-
-                // --- オート捕獲時の場所判定 ---
+                if (cat.spawn_condition === "overnight" && !hasStayedOvernight) conditionMatch = false;
                 let locationMatch = true;
                 if (cat.spawn_lat && cat.spawn_lng && cat.spawn_radius && lastLatLng) {
                     const dist = getDistance(lastLatLng.lat, lastLatLng.lng, cat.spawn_lat, cat.spawn_lng);
-                    if (dist > cat.spawn_radius) {
-                        locationMatch = false;
-                    }
+                    if (dist > cat.spawn_radius) locationMatch = false;
                 }
-
                 if (timeMatch && weatherMatch && conditionMatch && locationMatch) availableCats.push(cat);
             }
 
@@ -629,7 +579,6 @@
                 }
 
                 let successRate = isDistance ? 0.8 : 0.5;
-
                 if (Math.random() < successRate) {
                     if (!zukanData.includes(selectedCat.id)) {
                         zukanData.push(selectedCat.id);
@@ -641,12 +590,8 @@
                         autoResults.medals++;
                     }
                     autoResults.caught.push(selectedCat.id);
-                } else {
-                    autoResults.escaped++;
-                }
-            } else {
-                autoResults.escaped++;
-            }
+                } else { autoResults.escaped++; }
+            } else { autoResults.escaped++; }
 
             localStorage.setItem('tobishima_autoresults', JSON.stringify(autoResults));
             updateAutoResultBtn();
@@ -688,19 +633,19 @@
             document.getElementById('auto-result-modal').classList.remove('flex');
         });
 
-        // ==========================================
-        // SAショップ・UI操作イベント
-        // ==========================================
+        // ショップ画面（BGM連動）
         document.getElementById('open-shop-btn').addEventListener('click', () => {
             document.getElementById('shop-modal').classList.remove('hidden');
             document.getElementById('shop-modal').classList.add('flex');
             updateMedalUI();
             setRandomShopCatTalk();
+            fadeInAudio(shopBgm, 0.3, 1000); 
         });
 
         document.getElementById('close-shop').addEventListener('click', () => {
             document.getElementById('shop-modal').classList.add('hidden');
             document.getElementById('shop-modal').classList.remove('flex');
+            fadeOutAudio(shopBgm, 1000); 
         });
 
         function setRandomShopCatTalk() {
@@ -709,21 +654,15 @@
         }
 
         document.getElementById('shop-cat-box').addEventListener('click', () => {
-            catVoice.currentTime = 0;
-            catVoice.play().catch(()=>{});
+            catVoice.currentTime = 0; catVoice.play().catch(()=>{});
             setRandomShopCatTalk();
         });
 
         window.buyShopItem = function(itemId, cost) {
-            if (medalCount < cost) {
-                showCustomAlert('メダルが足りないニャ', `この商品はメダルが ${cost} 枚必要ニャ。<br>島で出会った猫たちからメダルをもらってくるニャ！`);
-                return;
-            }
-            
+            if (medalCount < cost) { showCustomAlert('メダルが足りないニャ', `この商品はメダルが ${cost} 枚必要ニャ。<br>島で出会った猫たちからメダルをもらってくるニャ！`); return; }
             medalCount -= cost;
             updateMedalUI();
-            catVoice.currentTime = 0;
-            catVoice.play().catch(()=>{});
+            catVoice.currentTime = 0; catVoice.play().catch(()=>{});
 
             if (itemId === 'food3') {
                 foodCount += 3;
@@ -738,12 +677,9 @@
             }
         };
 
-        // 「はじめる」ボタン押下時の処理
+        // はじめるボタン
         document.getElementById('start-btn').addEventListener('click', () => {
-            // BGMフェードアウト処理
             if (isBgmPlaying) fadeOutAudio(titleBgm, 1500); 
-            
-            // 猫のアニメーション生成をストップ
             if (titleCatInterval) clearInterval(titleCatInterval);
 
             catVoice.play().then(() => { catVoice.pause(); catVoice.currentTime = 0; }).catch(() => {});
@@ -754,8 +690,14 @@
             if (navigator.geolocation) { gpsWatchId = navigator.geolocation.watchPosition((p) => { let lat = p.coords.latitude, lng = p.coords.longitude; if (DEBUG_MODE) { lat = DUMMY_LAT; lng = DUMMY_LNG; } updateLocation(lat, lng); }, (e) => {}, { enableHighAccuracy: true, maximumAge: 2000, timeout: 5000 }); }
         });
 
+        // 庭画面（BGM連動）
         document.getElementById('go-garden-btn').addEventListener('click', () => {
-            document.getElementById('map-screen').style.display = 'none'; document.getElementById('garden-screen').style.display = 'block'; const gc = document.getElementById('garden-container'); gc.innerHTML = '';
+            document.getElementById('map-screen').style.display = 'none'; 
+            document.getElementById('garden-screen').style.display = 'block'; 
+            const gc = document.getElementById('garden-container'); gc.innerHTML = '';
+            
+            fadeInAudio(gardenBgm, 0.3, 2000); 
+
             let activeZukan = [...zukanData]; activeZukan.sort(() => 0.5 - Math.random()); let displayCats = activeZukan.slice(0, 5);
             displayCats.forEach(id => {
                 if (CAT_DATA[id]) {
@@ -794,6 +736,8 @@
             toyBtn.innerText = '🧶 あそぶ'; 
             toyIcon.classList.add('hidden'); 
             toyPos = null; 
+            
+            fadeOutAudio(gardenBgm, 1500); 
         });
 
         document.getElementById('open-zukan').addEventListener('click', () => { 
@@ -885,7 +829,6 @@
         document.getElementById('open-qr-btn').addEventListener('click', () => { document.getElementById('qr-modal').classList.remove('hidden'); document.getElementById('qr-modal').classList.add('flex'); html5QrCode = new Html5Qrcode("qr-reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, (dec) => { if(CAT_DATA[dec]) { html5QrCode.stop().then(() => { document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); addToZukan(dec); catVoice.currentTime = 0; catVoice.play().catch(()=>{}); showCustomAlert('🎉 シークレット発見！', `「${CAT_DATA[dec].name}」をゲットしたニャ！`); }); } }, (err) => {}).catch(err => { showCustomAlert('エラー', 'カメラの起動に失敗しました。'); document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); }); });
         document.getElementById('close-qr-btn').addEventListener('click', () => { if (html5QrCode) html5QrCode.stop().then(() => { document.getElementById('qr-modal').classList.add('hidden'); document.getElementById('qr-modal').classList.remove('flex'); }); });
 
-        // 庭モードのタッチ
         let isToyActive = false, toyPos = null; 
         const toyBtn = document.getElementById('toy-btn'), toyIcon = document.getElementById('toy-icon'), gardenScreen = document.getElementById('garden-screen');
 
@@ -910,7 +853,6 @@
         gardenScreen.addEventListener('mousemove', (e) => updateToyPosition(e.clientX, e.clientY));
         gardenScreen.addEventListener('touchmove', (e) => { if (isToyActive) e.preventDefault(); updateToyPosition(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
 
-        // マップ・GPS機能
         const map = L.map('map', { zoomControl: false }).setView([35.681236, 139.767125], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
         const BASE_ICON_SIZE = 80;
@@ -945,22 +887,13 @@
                 const cat = CAT_DATA[key]; if (cat.is_special) continue; 
                 const timeMatch = (!cat.spawn_time || cat.spawn_time === "all" || cat.spawn_time === currentTimeState);
                 const weatherMatch = (!cat.spawn_weather || cat.spawn_weather === "all" || cat.spawn_weather === currentWeatherState);
-                
-                // --- 1泊条件判定 ---
                 let conditionMatch = true;
-                if (cat.spawn_condition === "overnight" && !hasStayedOvernight) {
-                    conditionMatch = false;
-                }
-
-                // --- ランダム出現時の場所限定判定 ---
+                if (cat.spawn_condition === "overnight" && !hasStayedOvernight) conditionMatch = false;
                 let locationMatch = true;
                 if (cat.spawn_lat && cat.spawn_lng && cat.spawn_radius) {
                     const dist = getDistance(playerLatLng.lat, playerLatLng.lng, cat.spawn_lat, cat.spawn_lng);
-                    if (dist > cat.spawn_radius) {
-                        locationMatch = false;
-                    }
+                    if (dist > cat.spawn_radius) locationMatch = false;
                 }
-
                 if (timeMatch && weatherMatch && conditionMatch && locationMatch) availableCats.push(cat);
             }
             if (availableCats.length === 0) return;
@@ -1015,7 +948,7 @@
             let loopCountCatMove = 0;
             moveInterval = setInterval(() => {
                 loopCountCatMove++;
-                if (loopCountCatMove > 6000) { clearInterval(moveInterval); return; } // 安全装置（最大5分で強制停止）
+                if (loopCountCatMove > 6000) { clearInterval(moveInterval); return; }
                 const spd = 0.02; catCurrentLatLng = L.latLng(catCurrentLatLng.lat + (target.lat - catCurrentLatLng.lat)*spd, catCurrentLatLng.lng + (target.lng - catCurrentLatLng.lng)*spd); activeCatMarker.setLatLng(catCurrentLatLng);
                 const img = document.getElementById('cat-image');
                 if (img) { if ((target.lng - catCurrentLatLng.lng) > 0) { img.classList.remove('face-left'); img.classList.add('face-right'); } else { img.classList.remove('face-right'); img.classList.add('face-left'); }
@@ -1040,19 +973,12 @@
         }
         setInterval(checkTime, 60000); checkTime();
 
-        // --- GPS飛び対策用の猶予タイマー変数 ---
         let leaveTimerTimeout = null; 
 
         function checkStaySpot(lat, lng) {
             let found = STAY_SPOTS.find(s => getDistance(lat, lng, s.lat, s.lng) <= s.radius);
-            
             if (found) {
-                // ① エリア内にいる場合
-                if (leaveTimerTimeout) {
-                    clearTimeout(leaveTimerTimeout);
-                    leaveTimerTimeout = null;
-                }
-
+                if (leaveTimerTimeout) { clearTimeout(leaveTimerTimeout); leaveTimerTimeout = null; }
                 if (!activeStaySpot || activeStaySpot.id !== found.id) {
                     activeStaySpot = found; 
                     stayStartTime = Date.now(); 
@@ -1073,7 +999,6 @@
                     }, 1000);
                 }
             } else {
-                // ② エリア外に出た場合（2分間のGPSブレ猶予）
                 if (activeStaySpot && !leaveTimerTimeout) {
                     document.getElementById('stay-text').innerText = `GPSを探しています...（一時停止中）`; 
                     leaveTimerTimeout = setTimeout(() => {
@@ -1123,7 +1048,7 @@
                     document.getElementById('distance-bar').style.width = `${(distanceWalked / DISTANCE_TO_FOOD) * 100}%`; 
 
                     const now = Date.now();
-                    let loopCountDist = 0; // 安全装置：10回以上の連続処理を防ぐ
+                    let loopCountDist = 0; 
                     if (autoEndTime > now) {
                         autoDistanceWalked += dist;
                         localStorage.setItem('tobishima_auto_dist', autoDistanceWalked);
@@ -1143,9 +1068,6 @@
             if (isIsland) { if (!window.spawnTimer) window.spawnTimer = setInterval(() => { if (!isCatSpawned && Math.random() < 0.2) spawnRandomCat(playerMarker.getLatLng()); }, 10000); } else { document.getElementById('island-name').innerText = "ここはねこがいないエリアみたい"; if(window.spawnTimer) { clearInterval(window.spawnTimer); window.spawnTimer = null; } }
         }
 
-        // ==========================================
-        // AR撮影モード
-        // ==========================================
         let arActiveCat = null;
         let arZIndexCounter = 100;
         let arIsDragging = false, arIsPinching = false;
@@ -1361,9 +1283,6 @@
         document.getElementById('close-ar-result-btn').addEventListener('click', () => { document.getElementById('ar-result-modal').classList.add('hidden'); document.getElementById('ar-result-modal').classList.remove('flex'); });
         document.getElementById('download-ar-result-btn').addEventListener('click', () => { const dataUrl = document.getElementById('ar-result-img').src; const link = document.createElement('a'); link.download = `tobishima_${Date.now()}.png`; link.href = dataUrl; link.click(); });
 
-        // ==========================================
-        // ミニゲーム（柑橘・神経衰弱）
-        // ==========================================
         const MG_CITRUS_DATA = [
             { id: "unnsyuu", name: "温州蜜柑", img: "./unnsyuu.png", desc: "日本の冬の定番！皮が薄くて手で剥きやすいのが特徴だニャ。" },
             { id: "hassaku", name: "はっさく", img: "./hassaku.png", desc: "少し大きめで、皮が厚く、独特のほろ苦さとさっぱりした甘みがあるニャ。" },
@@ -1417,6 +1336,7 @@
             `;
         }
 
+        // ミニゲーム画面（BGM連動）
         document.getElementById('open-minigame-btn').addEventListener('click', () => {
             document.getElementById('map-screen').style.display = 'none';
             mgScreen.classList.remove('hidden');
@@ -1429,6 +1349,8 @@
             document.getElementById('mg-result').classList.add('hidden');
             document.getElementById('mg-start-btn').innerText = "スタート！";
             mgOverlay.classList.remove('hidden');
+
+            fadeInAudio(minigameBgm, 0.3, 1000); 
         });
 
         document.getElementById('mg-close-btn').addEventListener('click', () => {
@@ -1437,6 +1359,8 @@
             mgScreen.classList.remove('flex');
             document.getElementById('map-screen').style.display = 'block';
             map.invalidateSize();
+
+            fadeOutAudio(minigameBgm, 1000); 
         });
 
         document.getElementById('mg-start-btn').addEventListener('click', startMiniGame);
